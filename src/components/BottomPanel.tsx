@@ -113,6 +113,17 @@ const BottomPanel: React.FC<BottomPanelProps> = ({ graphRef }) => {
             </div>
 
             <div>
+              <p className="font-semibold text-sky-dark">Trident Agent</p>
+              <p className="mb-2">Creates multiple parallel exploration paths (prongs) that extend deeply with retry logic for finding promising nodes.</p>
+              <ul className="list-disc ml-6 space-y-1">
+                <li><strong>Prongs:</strong> Number of initial parallel branches to create (default: 3)</li>
+                <li><strong>Tries:</strong> Number of retry attempts per node to find an expandable continuation (default: 3)</li>
+                <li><strong>Depth:</strong> How deep each prong extends (default: 6)</li>
+                <li>Each prong evaluates nodes and retries if culled, stopping when a good path is found</li>
+              </ul>
+            </div>
+
+            <div>
               <p className="font-semibold text-sky-dark">Quick Invoke</p>
               <p>Assign button numbers (1-9) to agents, then press <kbd className="px-1 py-0.5 bg-gray-200 rounded text-xs">Ctrl + X</kbd> followed by the number to launch them quickly.</p>
             </div>
