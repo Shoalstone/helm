@@ -63,6 +63,7 @@ export interface Settings {
   apiKey: string;
   continuations: ModelSettings & {
     branchingFactor: number;
+    assistantMode?: boolean;
   };
   assistant: ModelSettings;
 }

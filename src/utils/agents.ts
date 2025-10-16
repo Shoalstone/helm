@@ -111,7 +111,8 @@ export async function expandNode(
         const completion = await callContinuationModel(
           apiKey,
           branchText,
-          settings.continuations
+          settings.continuations,
+          settings.continuations.assistantMode
         );
         return completion;
       } catch (error) {

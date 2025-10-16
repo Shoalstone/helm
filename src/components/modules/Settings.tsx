@@ -130,6 +130,25 @@ const Settings: React.FC = () => {
                   className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
                 />
               </div>
+
+              <div>
+                <label className="flex items-center text-xs font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={settings.continuations.assistantMode ?? false}
+                    onChange={(e) =>
+                      updateSettings({
+                        continuations: {
+                          ...settings.continuations,
+                          assistantMode: e.target.checked,
+                        },
+                      })
+                    }
+                    className="mr-2"
+                  />
+                  Assistant Mode
+                </label>
+              </div>
             </div>
           )}
         </div>

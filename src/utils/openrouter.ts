@@ -14,6 +14,7 @@ interface OpenRouterRequest {
   temperature?: number;
   top_p?: number;
   max_tokens?: number;
+  transforms?: string[];
 }
 
 interface OpenRouterResponse {
@@ -54,16 +55,24 @@ async function withRetry<T>(
 export async function callContinuationModel(
   apiKey: string,
   text: string,
-  settings: ModelSettings
+  settings: ModelSettings,
+  assistantMode?: boolean
 ): Promise<string> {
   return withRetry(async () => {
     const request: OpenRouterRequest = {
       model: settings.modelName,
-      messages: [{ role: 'user', content: text }],
       temperature: settings.temperature,
       top_p: settings.topP,
       max_tokens: settings.maxTokens,
     };
+
+    // Use raw prompt mode when assistantMode is enabled
+    if (assistantMode) {
+      request.prompt = text;
+      request.transforms = []; // Disable automatic prompt transforms
+    } else {
+      request.messages = [{ role: 'user', content: text }];
+    }
 
     const response = await fetch(API_URL, {
       method: 'POST',

@@ -36,6 +36,7 @@ const DEFAULT_SETTINGS: Settings = {
     topP: 1.0,
     maxTokens: 100,
     branchingFactor: 2,
+    assistantMode: false,
   },
   assistant: {
     modelName: 'openai/gpt-oss-20b',
