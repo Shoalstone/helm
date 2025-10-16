@@ -404,6 +404,188 @@ export async function runScout(
   await processNode(startNodeId, 1);
 }
 
+// Trident exploration process
+export async function runTrident(
+  tree: Tree,
+  startNodeId: string,
+  config: ScoutConfig,
+  apiKey: string,
+  settings: Settings,
+  lockNode: (id: string, reason: 'trident-active') => boolean,
+  unlockNode: (id: string) => void,
+  addNode: (parentId: string, text: string) => string,
+  deleteNode: (id: string) => void,
+  shouldStop: () => boolean,
+  onOutput?: (output: string) => void,
+  getTree?: () => Tree
+): Promise<void> {
+  const prongs = config.prongs || 2;
+  const tries = config.tries || 3;
+
+  // Process a single prong - attempts to extend depth times with retries
+  const processProng = async (nodeId: string, depth: number): Promise<void> => {
+    if (shouldStop() || depth > config.depth) return;
+
+    const acquired = lockNode(nodeId, 'trident-active');
+    if (!acquired) {
+      return;
+    }
+
+    try {
+      // Get fresh tree reference
+      const currentTree = getTree ? getTree() : tree;
+
+      // Evaluate current node
+      const result = await scoutDecision(currentTree, nodeId, config, apiKey, settings);
+
+      // Store the output if callback provided
+      if (onOutput && result.response) {
+        onOutput(result.response);
+      }
+
+      if (shouldStop()) return;
+
+      if (result.decision === 'cull') {
+        // Cull this node and stop this prong
+        try {
+          deleteNode(nodeId);
+        } catch (e) {
+          // Node might already be deleted
+        }
+        return;
+      }
+
+      // Decision is 'expand' - try to generate and expand a child
+      // Attempt up to `tries` times to find an expandable child
+      for (let attempt = 0; attempt < tries; attempt++) {
+        if (shouldStop()) break;
+
+        // Get fresh tree before expanding
+        const freshTree = getTree ? getTree() : tree;
+
+        // Generate ONE child
+        const childIds = await expandNode(
+          freshTree,
+          nodeId,
+          1, // Always generate exactly 1 child
+          apiKey,
+          settings,
+          (id) => lockNode(id, 'trident-active'),
+          unlockNode,
+          addNode
+        );
+
+        if (shouldStop() || childIds.length === 0) {
+          // Clean up if stopped
+          childIds.forEach((childId) => {
+            try {
+              deleteNode(childId);
+            } catch (e) {
+              // Ignore
+            }
+          });
+          break;
+        }
+
+        const childId = childIds[0];
+
+        // Evaluate the child
+        const childTree = getTree ? getTree() : tree;
+        const childResult = await scoutDecision(childTree, childId, config, apiKey, settings);
+
+        // Store the output if callback provided
+        if (onOutput && childResult.response) {
+          onOutput(childResult.response);
+        }
+
+        if (shouldStop()) {
+          try {
+            deleteNode(childId);
+          } catch (e) {
+            // Ignore
+          }
+          break;
+        }
+
+        if (childResult.decision === 'expand') {
+          // Success! Continue with this child to next depth
+          await processProng(childId, depth + 1);
+          return; // Exit after successful expansion
+        } else {
+          // Cull this attempt
+          try {
+            deleteNode(childId);
+          } catch (e) {
+            // Node might already be deleted
+          }
+
+          // If this was not the last attempt, continue to next try
+          if (attempt < tries - 1) {
+            continue;
+          } else {
+            // Exhausted all tries, stop this prong
+            return;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error in trident process:', error);
+    } finally {
+      if (acquired) {
+        unlockNode(nodeId);
+      }
+    }
+  };
+
+  // Main Trident logic: generate initial prongs and process each
+  try {
+    const acquired = lockNode(startNodeId, 'trident-active');
+    if (!acquired) {
+      return;
+    }
+
+    try {
+      // Get fresh tree reference
+      const currentTree = getTree ? getTree() : tree;
+
+      // Generate initial prongs (children)
+      const prongIds = await expandNode(
+        currentTree,
+        startNodeId,
+        prongs,
+        apiKey,
+        settings,
+        (id) => lockNode(id, 'trident-active'),
+        unlockNode,
+        addNode
+      );
+
+      if (shouldStop()) {
+        // Clean up if stopped
+        prongIds.forEach((prongId) => {
+          try {
+            deleteNode(prongId);
+          } catch (e) {
+            // Ignore
+          }
+        });
+        return;
+      }
+
+      // Process all prongs in parallel
+      await Promise.all(
+        prongIds.map(prongId => processProng(prongId, 1))
+      );
+    } finally {
+      if (acquired) {
+        unlockNode(startNodeId);
+      }
+    }
+  } catch (error) {
+    console.error('Error starting trident:', error);
+  }
+}
+
 export async function runWitness(
   tree: Tree,
   startNodeId: string,

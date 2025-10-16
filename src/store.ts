@@ -341,7 +341,7 @@ interface AppState {
   updateNodeText: (nodeId: string, text: string) => void;
   lockNode: (
     nodeId: string,
-    reason: 'expanding' | 'scout-active' | 'witness-active' | 'copilot-deciding'
+    reason: 'expanding' | 'scout-active' | 'witness-active' | 'copilot-deciding' | 'trident-active'
   ) => boolean;
   unlockNode: (nodeId: string) => void;
   addNode: (parentId: string, text: string) => string;
@@ -568,7 +568,7 @@ export const useStore = create<AppState>((set, get) => {
 
   lockNode: (
     nodeId: string,
-    reason: 'expanding' | 'scout-active' | 'witness-active' | 'copilot-deciding'
+    reason: 'expanding' | 'scout-active' | 'witness-active' | 'copilot-deciding' | 'trident-active'
   ) => {
     const tree = get().currentTree;
     if (!tree) return false;
@@ -621,7 +621,8 @@ export const useStore = create<AppState>((set, get) => {
       parent.lockReason !== 'expanding' &&
       parent.lockReason !== 'scout-active' &&
       parent.lockReason !== 'witness-active' &&
-      parent.lockReason !== 'copilot-deciding'
+      parent.lockReason !== 'copilot-deciding' &&
+      parent.lockReason !== 'trident-active'
     ) {
       return '';
     }
@@ -709,10 +710,10 @@ export const useStore = create<AppState>((set, get) => {
     if (!tree || nodeId === tree.rootId) return;
 
     const node = tree.nodes.get(nodeId);
-    if (!node || (node.locked && node.lockReason !== 'witness-active' && node.lockReason !== 'copilot-deciding')) return;
+    if (!node || (node.locked && node.lockReason !== 'witness-active' && node.lockReason !== 'copilot-deciding' && node.lockReason !== 'trident-active')) return;
 
     const parent = tree.nodes.get(node.parentId!);
-    if (!parent || (parent.locked && parent.lockReason !== 'witness-active' && parent.lockReason !== 'copilot-deciding')) return;
+    if (!parent || (parent.locked && parent.lockReason !== 'witness-active' && parent.lockReason !== 'copilot-deciding' && parent.lockReason !== 'trident-active')) return;
 
     // Don't delete if the node is bookmarked (bookmarked nodes are anchors)
     const nodeIsBookmarked = tree.bookmarkedNodeIds.includes(nodeId);

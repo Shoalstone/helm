@@ -4,7 +4,7 @@ export interface TreeNode {
   parentId: string | null;
   childIds: string[];
   locked: boolean;
-  lockReason?: 'expanding' | 'scout-active' | 'witness-active' | 'copilot-deciding';
+  lockReason?: 'expanding' | 'scout-active' | 'witness-active' | 'copilot-deciding' | 'trident-active';
 }
 
 export interface Tree {
@@ -19,7 +19,7 @@ export interface Tree {
 export interface ScoutConfig {
   id: string;
   name: string;
-  type: 'Scout' | 'Witness' | 'Campaign';
+  type: 'Scout' | 'Witness' | 'Campaign' | 'Trident';
   instructions: string;
   vision: number; // Number of parent nodes to include
   range: number; // Branching factor when expanding
@@ -40,6 +40,8 @@ export interface ScoutConfig {
   shotgunEnabled?: boolean; // Enable shotgun mode
   shotgunLayers?: number; // Number of initial layers to shotgun (1-10)
   shotgunRanges?: number[]; // Array of ranges for each shotgunned layer
+  prongs?: number; // Number of initial branches for Trident (Trident only)
+  tries?: number; // Number of retry attempts per node for Trident (Trident only)
 }
 
 export interface CopilotConfig {

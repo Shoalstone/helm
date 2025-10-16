@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store';
-import { runScout, runWitness, runCampaign } from '../../utils/agents';
+import { runScout, runWitness, runCampaign, runTrident } from '../../utils/agents';
 
 const Scout: React.FC = () => {
   const {
@@ -29,6 +29,7 @@ const Scout: React.FC = () => {
   // Default instructions for each agent type
   const DEFAULT_SCOUT_INSTRUCTIONS = 'Choose to expand nodes that are interesting, and cull nodes that are boring.';
   const DEFAULT_WITNESS_INSTRUCTIONS = 'Choose the most interesting continuation.';
+  const DEFAULT_TRIDENT_INSTRUCTIONS = 'Choose to expand nodes that are interesting, and cull nodes that are boring.';
 
   const createScout = () => {
     const scoutId = `scout_${Date.now()}`;
@@ -47,12 +48,14 @@ const Scout: React.FC = () => {
       cycles: 3,
       campaignScoutInstructions: DEFAULT_SCOUT_INSTRUCTIONS,
       campaignWitnessInstructions: DEFAULT_WITNESS_INSTRUCTIONS,
+      prongs: 3,
+      tries: 3,
     };
     addScout(newScout);
     setExpandedScout(scoutId);
   };
 
-  const handleTypeChange = (scoutId: string, newType: 'Scout' | 'Witness' | 'Campaign') => {
+  const handleTypeChange = (scoutId: string, newType: 'Scout' | 'Witness' | 'Campaign' | 'Trident') => {
     const scout = scouts.find(s => s.id === scoutId);
     if (!scout) return;
 
@@ -60,17 +63,27 @@ const Scout: React.FC = () => {
     const isDefaultInstructions =
       (scout.type === 'Scout' && scout.instructions === DEFAULT_SCOUT_INSTRUCTIONS) ||
       (scout.type === 'Witness' && scout.instructions === DEFAULT_WITNESS_INSTRUCTIONS) ||
-      (scout.type === 'Campaign' && scout.instructions === DEFAULT_SCOUT_INSTRUCTIONS);
+      (scout.type === 'Campaign' && scout.instructions === DEFAULT_SCOUT_INSTRUCTIONS) ||
+      (scout.type === 'Trident' && scout.instructions === DEFAULT_TRIDENT_INSTRUCTIONS);
 
     // If still default, update to new default; otherwise keep custom instructions
     const updates: any = { type: newType };
     if (isDefaultInstructions) {
       if (newType === 'Witness') {
         updates.instructions = DEFAULT_WITNESS_INSTRUCTIONS;
+      } else if (newType === 'Trident') {
+        updates.instructions = DEFAULT_TRIDENT_INSTRUCTIONS;
       } else {
         // Scout or Campaign
         updates.instructions = DEFAULT_SCOUT_INSTRUCTIONS;
       }
+    }
+
+    // Set Trident-specific defaults when switching to Trident
+    if (newType === 'Trident') {
+      updates.depth = 6;
+      updates.prongs = 3;
+      updates.tries = 3;
     }
 
     updateScout(scoutId, updates);
@@ -130,6 +143,21 @@ const Scout: React.FC = () => {
           mergeWithParent,
           () => stopFlag.stop,
           (output) => addScoutOutput(scoutId, output)
+        );
+      } else if (scout.type === 'Trident') {
+        await runTrident(
+          currentTree,
+          currentTree.currentNodeId,
+          scout,
+          settings.apiKey,
+          settings,
+          (id) => lockNode(id, 'trident-active'),
+          unlockNode,
+          addNode,
+          deleteNode,
+          () => stopFlag.stop,
+          (output) => addScoutOutput(scoutId, output),
+          getTree
         );
       } else {
         await runScout(
@@ -282,7 +310,7 @@ const Scout: React.FC = () => {
                   <select
                     value={scout.type}
                     onChange={(e) =>
-                      handleTypeChange(scout.id, e.target.value as 'Scout' | 'Witness' | 'Campaign')
+                      handleTypeChange(scout.id, e.target.value as 'Scout' | 'Witness' | 'Campaign' | 'Trident')
                     }
                     className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
                     disabled={scout.active}
@@ -290,6 +318,7 @@ const Scout: React.FC = () => {
                     <option value="Scout">Scout</option>
                     <option value="Witness">Witness</option>
                     <option value="Campaign">Campaign</option>
+                    <option value="Trident">Trident</option>
                   </select>
                 </div>
 
@@ -583,18 +612,48 @@ const Scout: React.FC = () => {
                       />
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Range</label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="10"
-                        value={scout.range}
-                        onChange={(e) => updateScout(scout.id, { range: parseInt(e.target.value) })}
-                        className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
-                        disabled={scout.active}
-                      />
-                    </div>
+                    {scout.type === 'Trident' ? (
+                      <>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Prongs</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={scout.prongs || 2}
+                            onChange={(e) => updateScout(scout.id, { prongs: parseInt(e.target.value) })}
+                            className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
+                            disabled={scout.active}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">Tries</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={scout.tries || 3}
+                            onChange={(e) => updateScout(scout.id, { tries: parseInt(e.target.value) })}
+                            className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
+                            disabled={scout.active}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Range</label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={scout.range}
+                          onChange={(e) => updateScout(scout.id, { range: parseInt(e.target.value) })}
+                          className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
+                          disabled={scout.active}
+                        />
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">Depth</label>
