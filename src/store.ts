@@ -37,12 +37,14 @@ const DEFAULT_SETTINGS: Settings = {
     maxTokens: 100,
     branchingFactor: 2,
     assistantMode: false,
+    savedModels: [],
   },
   assistant: {
     modelName: 'openai/gpt-oss-20b',
     temperature: 1.0,
     topP: 1.0,
     maxTokens: 2000,
+    savedModels: [],
   },
 };
 

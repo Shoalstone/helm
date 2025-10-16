@@ -66,8 +66,11 @@ export interface Settings {
   continuations: ModelSettings & {
     branchingFactor: number;
     assistantMode?: boolean;
+    savedModels?: string[];
   };
-  assistant: ModelSettings;
+  assistant: ModelSettings & {
+    savedModels?: string[];
+  };
 }
 
 export type PanelModule =
