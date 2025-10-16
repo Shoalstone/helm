@@ -543,6 +543,7 @@ export const useStore = create<AppState>((set, get) => {
     set({
       currentTree: {
         ...tree,
+        nodes: new Map(tree.nodes),
         currentNodeId: nodeId,
       },
     });
@@ -560,7 +561,7 @@ export const useStore = create<AppState>((set, get) => {
     node.text = text;
     tree.nodes.set(nodeId, node);
 
-    set({ currentTree: { ...tree } });
+    set({ currentTree: { ...tree, nodes: new Map(tree.nodes) } });
     scheduleTreeSave();
   },
 
@@ -589,7 +590,7 @@ export const useStore = create<AppState>((set, get) => {
     node.lockReason = reason;
     tree.nodes.set(nodeId, node);
 
-    set({ currentTree: { ...tree } });
+    set({ currentTree: { ...tree, nodes: new Map(tree.nodes) } });
     return true;
   },
 
@@ -604,7 +605,7 @@ export const useStore = create<AppState>((set, get) => {
     node.lockReason = undefined;
     tree.nodes.set(nodeId, node);
 
-    set({ currentTree: { ...tree } });
+    set({ currentTree: { ...tree, nodes: new Map(tree.nodes) } });
   },
 
   addNode: (parentId: string, text: string) => {
@@ -1204,6 +1205,7 @@ export const useStore = create<AppState>((set, get) => {
 
     const updatedTree = {
       ...tree,
+      nodes: new Map(tree.nodes),
       bookmarkedNodeIds,
     };
 

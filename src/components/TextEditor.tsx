@@ -450,7 +450,7 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(({ fontFamily, 
   }, [text, readOnlyEndPosition, currentTree?.currentNodeId]);
 
   const handleEditorChange = (value: string | undefined) => {
-    if (!value || !currentTree) return;
+    if (value === undefined || !currentTree) return;
 
     const currentNode = currentTree.nodes.get(currentTree.currentNodeId);
     if (!currentNode || currentNode.locked) return;
