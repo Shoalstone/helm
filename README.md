@@ -23,11 +23,13 @@ A Help text will appear when you first open the application. For quick start, us
 
 ## Installation
 
+Visit the [Releases](https://github.com/Shoalstone/helm/releases) page to install.
+
+## Development
+
 ```bash
 npm install
 ```
-
-## Development
 
 ```bash
 npm run dev
