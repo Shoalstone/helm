@@ -47,5 +47,7 @@ npm run dist:mac
 # Package for Windows
 npm run dist:win
 
-# Not yet tested on Linux (contact me if you do)
-```
+# Linux
+electron-builder --linux --publish never
+# run with:
+./release/Helm-1.2.0.AppImage --no-sandbox
