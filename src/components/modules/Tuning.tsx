@@ -138,7 +138,7 @@ const Tuning: React.FC = () => {
     try {
       addTuningOutput('Starting fine-tuning job...');
 
-      // Get dataset size from training data or external source
+      // Get dataset size from training data or external source for display
       const dataSource = tuning.externalDataSource
         ? await window.electronAPI.readFile(tuning.externalDataSource)
         : null;
@@ -149,20 +149,17 @@ const Tuning: React.FC = () => {
 
       const datasetSize = dataToUse.length;
 
-      const { jobId, status } = await startFineTuneJob(tuning.openaiApiKey, tuning.uploadedFileId, datasetSize);
-
-      // Calculate same values for display
-      const batchSize = Math.max(1, Math.min(32, Math.floor(datasetSize * 0.15)));
-      let epochs: number;
-      if (datasetSize < 50) epochs = 3;
-      else if (datasetSize < 100) epochs = 5;
-      else if (datasetSize < 200) epochs = 8;
-      else if (datasetSize < 500) epochs = 10;
-      else epochs = 12;
+      const { jobId, status } = await startFineTuneJob(
+        tuning.openaiApiKey,
+        tuning.uploadedFileId,
+        tuning.epochs,
+        tuning.batchSize,
+        tuning.learningRate
+      );
 
       updateTuning({ currentJobId: jobId });
       addTuningOutput(`Fine-tuning job started! Job ID: ${jobId}, Status: ${status}`);
-      addTuningOutput(`Dataset: ${datasetSize} examples | Epochs: ${epochs} | Batch size: ${batchSize} (15% of dataset)`);
+      addTuningOutput(`Dataset: ${datasetSize} examples | Epochs: ${tuning.epochs} | Batch size: ${tuning.batchSize} | Learning rate: ${tuning.learningRate}`);
     } catch (error) {
       addTuningOutput(`Failed to start job: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -356,6 +353,72 @@ const Tuning: React.FC = () => {
           <p className="text-xs text-gray-600 mt-1">
             Current data: {currentDataCount} entries
           </p>
+
+          <div className="mt-3">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Context Depth</label>
+            <input
+              type="number"
+              min="1"
+              max="20"
+              value={tuning.contextDepth}
+              onChange={(e) => updateTuning({ contextDepth: parseInt(e.target.value) || 1 })}
+              className="w-full px-2 py-1 text-xs rounded border border-sky-medium focus:outline-none focus:ring-2 focus:ring-sky-dark"
+            />
+            <p className="text-xs text-gray-500 mt-1">Number of parent nodes to include as context</p>
+          </div>
+        </div>
+
+        {/* Training Parameters */}
+        <div className="mb-4 p-3 bg-white rounded-lg">
+          <h4 className="text-xs font-semibold text-gray-800 mb-2">Training Parameters</h4>
+
+          <div className="mb-2">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Epochs</label>
+            <input
+              type="number"
+              min="1"
+              max="50"
+              value={tuning.epochs}
+              onChange={(e) => updateTuning({ epochs: parseInt(e.target.value) || 1 })}
+              className="w-full px-2 py-1 text-xs rounded border border-sky-medium focus:outline-none focus:ring-2 focus:ring-sky-dark"
+            />
+            <p className="text-xs text-gray-500 mt-1">Number of training epochs</p>
+          </div>
+
+          <div className="mb-2">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Batch Size</label>
+            <input
+              type="number"
+              min="1"
+              max="256"
+              value={tuning.batchSize}
+              onChange={(e) => updateTuning({ batchSize: parseInt(e.target.value) || 1 })}
+              className="w-full px-2 py-1 text-xs rounded border border-sky-medium focus:outline-none focus:ring-2 focus:ring-sky-dark"
+            />
+            <p className="text-xs text-gray-500 mt-1">Training batch size</p>
+          </div>
+
+          <div className="mb-2">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Learning Rate</label>
+            <input
+              type="text"
+              value={tuning.learningRate}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'auto') {
+                  updateTuning({ learningRate: 'auto' });
+                } else {
+                  const num = parseFloat(val);
+                  if (!isNaN(num)) {
+                    updateTuning({ learningRate: num });
+                  }
+                }
+              }}
+              className="w-full px-2 py-1 text-xs rounded border border-sky-medium focus:outline-none focus:ring-2 focus:ring-sky-dark"
+              placeholder="auto or number (e.g., 0.5)"
+            />
+            <p className="text-xs text-gray-500 mt-1">Learning rate multiplier (use 'auto' for automatic)</p>
+          </div>
         </div>
 
         {/* Data Management Buttons */}

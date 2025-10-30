@@ -326,6 +326,10 @@ const DEFAULT_TUNING: TuningConfig = {
   uploadStatus: null,
   currentJobId: null,
   outputs: [],
+  contextDepth: 4,
+  epochs: 2,
+  batchSize: 6,
+  learningRate: 'auto',
 };
 
 const loadTuning = (): TuningConfig => {
@@ -1435,14 +1439,16 @@ export const useStore = create<AppState>((set, get) => {
       return;
     }
 
-    // Build context from parent nodes
+    // Build context from parent nodes, limited by contextDepth
     const contextNodes: string[] = [];
     let parentId = targetNode.parentId;
-    while (parentId) {
+    let depth = 0;
+    while (parentId && depth < tuning.contextDepth) {
       const parentNode = tree.nodes.get(parentId);
       if (parentNode) {
         contextNodes.unshift(parentNode.text);
         parentId = parentNode.parentId;
+        depth++;
       } else {
         break;
       }

@@ -96,6 +96,10 @@ export interface TuningConfig {
   uploadStatus: string | null;
   currentJobId: string | null;
   outputs: string[]; // Status messages
+  contextDepth: number; // Number of parent nodes to include as context when capturing decisions
+  epochs: number; // Number of training epochs
+  batchSize: number; // Batch size for training
+  learningRate: number | 'auto'; // Learning rate multiplier or 'auto'
 }
 
 export type PanelModule =
