@@ -12,6 +12,7 @@ import Tuning from './modules/Tuning';
 const RightPanel: React.FC = () => {
   const { rightPanel, updatePanels } = useStore();
   const [splitRatio, setSplitRatio] = useState(50);
+  const [panelWidth, setPanelWidth] = useState(320); // width in pixels, not persisted
 
   const modules: PanelModule[] = ['Tree', 'Graph', 'Agents', 'Copilot', 'Actions', 'Settings', 'Tuning', null];
 
@@ -39,7 +40,35 @@ const RightPanel: React.FC = () => {
   const hasSplit = rightPanel.top && rightPanel.bottom;
 
   return (
-    <div className="w-80 flex flex-col bg-sky-light border-l border-sky-medium">
+    <div className="flex relative bg-sky-light border-l border-sky-medium">
+      {/* Horizontal resize handle */}
+      <div
+        className="w-1 bg-sky-divider cursor-col-resize hover:bg-sky-medium transition-colors absolute left-0 top-0 bottom-0 z-10"
+        onMouseDown={(e) => {
+          e.preventDefault();
+          document.body.style.userSelect = 'none';
+
+          const startX = e.clientX;
+          const startWidth = panelWidth;
+
+          const handleMouseMove = (moveEvent: MouseEvent) => {
+            const deltaX = startX - moveEvent.clientX; // Inverted for right panel
+            const newWidth = Math.max(200, Math.min(600, startWidth + deltaX));
+            setPanelWidth(newWidth);
+          };
+
+          const handleMouseUp = () => {
+            document.body.style.userSelect = '';
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+          };
+
+          document.addEventListener('mousemove', handleMouseMove);
+          document.addEventListener('mouseup', handleMouseUp);
+        }}
+      />
+
+      <div style={{ width: `${panelWidth}px` }} className="flex flex-col">
       {/* Module selection ribbon */}
       <div className="h-10 bg-sky-medium flex items-center px-3 gap-2">
         <select
@@ -83,6 +112,9 @@ const RightPanel: React.FC = () => {
             <div
               className="h-1 bg-sky-divider cursor-row-resize hover:bg-sky-medium transition-colors"
               onMouseDown={(e) => {
+                e.preventDefault();
+                document.body.style.userSelect = 'none';
+
                 const startY = e.clientY;
                 const startRatio = splitRatio;
                 const panelHeight = e.currentTarget.parentElement!.clientHeight;
@@ -95,6 +127,7 @@ const RightPanel: React.FC = () => {
                 };
 
                 const handleMouseUp = () => {
+                  document.body.style.userSelect = '';
                   document.removeEventListener('mousemove', handleMouseMove);
                   document.removeEventListener('mouseup', handleMouseUp);
                 };
@@ -108,6 +141,7 @@ const RightPanel: React.FC = () => {
             </div>
           </>
         )}
+      </div>
       </div>
     </div>
   );

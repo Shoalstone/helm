@@ -36,6 +36,9 @@ function App() {
             <div
               className="cursor-row-resize hover:bg-sky-dark transition-colors"
               onMouseDown={(e) => {
+                e.preventDefault();
+                document.body.style.userSelect = 'none';
+
                 const startY = e.clientY;
                 const startHeight = bottomPanelHeight;
                 const containerElement = e.currentTarget.parentElement!.parentElement!;
@@ -51,6 +54,7 @@ function App() {
                 };
 
                 const handleMouseUp = () => {
+                  document.body.style.userSelect = '';
                   document.removeEventListener('mousemove', handleMouseMove);
                   document.removeEventListener('mouseup', handleMouseUp);
                 };
