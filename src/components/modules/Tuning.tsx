@@ -324,12 +324,12 @@ const Tuning: React.FC = () => {
           <label className="block text-xs font-medium text-gray-700 mb-1">Status</label>
           <div
             ref={statusOutputRef}
-            className="w-full h-32 px-2 py-2 text-xs rounded border border-sky-medium bg-white overflow-y-auto font-mono"
+            className="w-full h-20 px-2 py-2 text-xs rounded border border-sky-medium bg-white overflow-y-auto font-mono"
           >
             {tuning.outputs.length === 0 ? (
               <div className="text-gray-400">Status messages will appear here...</div>
             ) : (
-              tuning.outputs.map((output, i) => (
+              tuning.outputs.slice(-3).map((output, i) => (
                 <div key={i} className="mb-1">
                   {output}
                 </div>

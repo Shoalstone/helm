@@ -78,7 +78,6 @@ export interface TrainingDataEntry {
   context: string;
   currentNode: string;
   decision: 'expand' | 'cull';
-  timestamp: number;
 }
 
 export interface FineTuneModel {

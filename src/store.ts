@@ -1453,14 +1453,13 @@ export const useStore = create<AppState>((set, get) => {
       context,
       currentNode: targetNode.text,
       decision,
-      timestamp: Date.now(),
     };
 
     // Update tuning state with new training data and output in one operation
     const updated = {
       ...tuning,
       trainingData: [...tuning.trainingData, trainingEntry],
-      outputs: [...tuning.outputs, `Captured ${decision} decision at ${new Date().toLocaleTimeString()}`],
+      outputs: [...tuning.outputs, `Captured ${decision} decision`],
     };
 
     set({ tuning: updated });

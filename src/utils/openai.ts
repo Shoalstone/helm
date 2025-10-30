@@ -201,7 +201,6 @@ export async function importTrainingData(jsonlContent: string): Promise<Training
             context,
             currentNode,
             decision: decision as 'expand' | 'cull',
-            timestamp: Date.now()
           });
         }
       }
