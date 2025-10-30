@@ -151,10 +151,18 @@ const Tuning: React.FC = () => {
 
       const { jobId, status } = await startFineTuneJob(tuning.openaiApiKey, tuning.uploadedFileId, datasetSize);
 
-      const batchSize = Math.max(1, Math.floor(datasetSize * 0.2));
+      // Calculate same values for display
+      const batchSize = Math.max(1, Math.min(32, Math.floor(datasetSize * 0.15)));
+      let epochs: number;
+      if (datasetSize < 50) epochs = 3;
+      else if (datasetSize < 100) epochs = 5;
+      else if (datasetSize < 200) epochs = 8;
+      else if (datasetSize < 500) epochs = 10;
+      else epochs = 12;
+
       updateTuning({ currentJobId: jobId });
       addTuningOutput(`Fine-tuning job started! Job ID: ${jobId}, Status: ${status}`);
-      addTuningOutput(`Hyperparameters: 10 epochs, batch size: ${batchSize} (20% of ${datasetSize} entries)`);
+      addTuningOutput(`Dataset: ${datasetSize} examples | Epochs: ${epochs} | Batch size: ${batchSize} (15% of dataset)`);
     } catch (error) {
       addTuningOutput(`Failed to start job: ${error instanceof Error ? error.message : String(error)}`);
     }

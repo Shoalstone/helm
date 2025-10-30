@@ -53,15 +53,28 @@ export async function uploadTrainingFile(apiKey: string, data: TrainingDataEntry
 export async function startFineTuneJob(apiKey: string, fileId: string, datasetSize: number, baseModel: string = 'gpt-4.1-nano-2025-04-14'): Promise<{ jobId: string; status: string }> {
   const client = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
 
-  // Calculate batch size as 20% of dataset size
-  const batchSize = Math.max(1, Math.floor(datasetSize * 0.2));
+  const batchSizeRaw = Math.floor(datasetSize * 0.15);
+  const batchSize = Math.max(1, Math.min(32, batchSizeRaw));
+
+  let epochs: number;
+  if (datasetSize < 50) {
+    epochs = 3;
+  } else if (datasetSize < 100) {
+    epochs = 5;
+  } else if (datasetSize < 200) {
+    epochs = 8;
+  } else if (datasetSize < 500) {
+    epochs = 10;
+  } else {
+    epochs = 12;
+  }
 
   try {
     const response = await client.fineTuning.jobs.create({
       training_file: fileId,
       model: baseModel,
       hyperparameters: {
-        n_epochs: 10,
+        n_epochs: epochs,
         batch_size: batchSize,
         learning_rate_multiplier: 'auto'
       }
