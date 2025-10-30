@@ -15,8 +15,11 @@ const Tuning: React.FC = () => {
   const [confirmingClearData, setConfirmingClearData] = useState(false);
   const [deleteFineTuneName, setDeleteFineTuneName] = useState('');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingCancelJob, setConfirmingCancelJob] = useState(false);
+  const [statusResult, setStatusResult] = useState<string>('');
   const clearDataTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const cancelJobTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const statusOutputRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new outputs are added
@@ -167,25 +170,46 @@ const Tuning: React.FC = () => {
 
   const handleCheckStatus = async () => {
     if (!tuning.openaiApiKey) {
-      addTuningOutput('Error: OpenAI API key is required');
+      setStatusResult('Error: OpenAI API key is required');
       return;
     }
 
     if (!tuning.currentJobId) {
-      addTuningOutput('Error: No active job');
+      setStatusResult('Error: No active job');
       return;
     }
 
     try {
       const { status, fineTunedModel } = await checkJobStatus(tuning.openaiApiKey, tuning.currentJobId);
 
-      addTuningOutput(`Job status: ${status}${fineTunedModel ? `, Model: ${fineTunedModel}` : ''}`);
+      const result = `Job status: ${status}${fineTunedModel ? `, Model: ${fineTunedModel}` : ''}`;
+      setStatusResult(result);
+      addTuningOutput(result);
     } catch (error) {
-      addTuningOutput(`Failed to check status: ${error instanceof Error ? error.message : String(error)}`);
+      const errorMsg = `Failed to check status: ${error instanceof Error ? error.message : String(error)}`;
+      setStatusResult(errorMsg);
+      addTuningOutput(errorMsg);
     }
   };
 
   const handleCancelJob = async () => {
+    if (!confirmingCancelJob) {
+      setConfirmingCancelJob(true);
+      if (cancelJobTimeoutRef.current) {
+        clearTimeout(cancelJobTimeoutRef.current);
+      }
+      cancelJobTimeoutRef.current = setTimeout(() => {
+        setConfirmingCancelJob(false);
+      }, 3000);
+      return;
+    }
+
+    // Clear confirmation timeout
+    if (cancelJobTimeoutRef.current) {
+      clearTimeout(cancelJobTimeoutRef.current);
+    }
+    setConfirmingCancelJob(false);
+
     if (!tuning.openaiApiKey) {
       addTuningOutput('Error: OpenAI API key is required');
       return;
@@ -197,12 +221,25 @@ const Tuning: React.FC = () => {
     }
 
     try {
-      const { status } = await cancelJob(tuning.openaiApiKey, tuning.currentJobId);
+      // Check status first to see if job can be cancelled
+      const { status } = await checkJobStatus(tuning.openaiApiKey, tuning.currentJobId);
 
-      addTuningOutput(`Job cancelled. Status: ${status}`);
+      // If job is already in a terminal state (failed, succeeded, cancelled), just clear it
+      if (status === 'failed' || status === 'succeeded' || status === 'cancelled') {
+        addTuningOutput(`Job is already ${status}. Clearing from active jobs.`);
+        updateTuning({ currentJobId: null });
+        return;
+      }
+
+      // Otherwise, attempt to cancel it
+      const cancelResult = await cancelJob(tuning.openaiApiKey, tuning.currentJobId);
+      addTuningOutput(`Job cancelled. Status: ${cancelResult.status}`);
       updateTuning({ currentJobId: null });
     } catch (error) {
-      addTuningOutput(`Failed to cancel job: ${error instanceof Error ? error.message : String(error)}`);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      // Even if cancel fails, clear the job from state so user isn't stuck
+      addTuningOutput(`Failed to cancel job: ${errorMsg}. Clearing from active jobs.`);
+      updateTuning({ currentJobId: null });
     }
   };
 
@@ -305,6 +342,9 @@ const Tuning: React.FC = () => {
       }
       if (deleteTimeoutRef.current) {
         clearTimeout(deleteTimeoutRef.current);
+      }
+      if (cancelJobTimeoutRef.current) {
+        clearTimeout(cancelJobTimeoutRef.current);
       }
     };
   }, []);
@@ -482,7 +522,7 @@ const Tuning: React.FC = () => {
         {/* Fine-Tuned Model Name */}
         <div className="mb-4">
           <label className="block text-xs font-medium text-gray-700 mb-1">
-            Custom Fine-Tuned Model Name
+            Fine-Tuned Model Name
           </label>
           <input
             type="text"
@@ -563,6 +603,9 @@ const Tuning: React.FC = () => {
 
         {/* Fine-Tuning Job Controls */}
         <div className="mb-4 space-y-2">
+          <p className="text-xs text-gray-500 px-1 mb-2">
+            Fine-tuning can be expensive depending on the dataset size and settings; if you're new, don't put a lot of money in your account. A place to start is 200 decisions, 2 epochs.
+          </p>
           <button
             onClick={handleBeginFineTuning}
             disabled={!tuning.openaiApiKey || !tuning.uploadedFileId}
@@ -578,13 +621,20 @@ const Tuning: React.FC = () => {
           >
             Check Status
           </button>
+          {statusResult && (
+            <p className="text-xs text-gray-600 px-1">{statusResult}</p>
+          )}
 
           <button
             onClick={handleCancelJob}
             disabled={!tuning.openaiApiKey || !tuning.currentJobId}
-            className="w-full px-3 py-2 text-xs rounded bg-sky-accent hover:bg-sky-light text-gray-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`w-full px-3 py-2 text-xs rounded transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+              confirmingCancelJob
+                ? 'bg-sky-medium hover:bg-sky-dark text-gray-800'
+                : 'bg-sky-accent hover:bg-sky-light text-gray-800'
+            }`}
           >
-            Cancel Job
+            {confirmingCancelJob ? 'Are you sure?' : 'Cancel Job'}
           </button>
 
           <button
