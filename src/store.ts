@@ -6,6 +6,7 @@ import {
   CopilotConfig,
   Settings,
   PanelConfig,
+  TuningConfig,
 } from './types';
 import { saveTree, loadTree, createNewTree, deleteTree as deleteTreeFromFS, renameTree as renameTreeFromFS, extractSubtree as extractSubtreeFromFS, getTreeListAsync } from './utils/fileSystem';
 
@@ -15,6 +16,7 @@ const COPILOT_STORAGE_KEY = 'helm-copilot';
 const UI_STATE_STORAGE_KEY = 'helm-ui-state';
 const AUTOMATIC_BOOKMARK_STORAGE_KEY = 'helm-automatic-bookmark';
 const CURRENT_TREE_STORAGE_KEY = 'helm-current-tree';
+const TUNING_STORAGE_KEY = 'helm-tuning';
 const TREE_SAVE_DEBOUNCE_MS = 500;
 let treeSaveBeforeUnloadRegistered = false;
 
@@ -313,6 +315,53 @@ const persistCurrentTreeId = (treeId: string | null) => {
   }
 };
 
+const DEFAULT_TUNING: TuningConfig = {
+  captureDecisions: false,
+  trainingData: [],
+  externalDataSource: null,
+  openaiApiKey: '',
+  fineTunedModelName: '',
+  fineTunes: [],
+  uploadedFileId: null,
+  uploadStatus: null,
+  currentJobId: null,
+  outputs: [],
+};
+
+const loadTuning = (): TuningConfig => {
+  if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+    return { ...DEFAULT_TUNING };
+  }
+
+  try {
+    const stored = window.localStorage.getItem(TUNING_STORAGE_KEY);
+    if (!stored) {
+      return { ...DEFAULT_TUNING };
+    }
+
+    const parsed = JSON.parse(stored) as Partial<TuningConfig>;
+    return {
+      ...DEFAULT_TUNING,
+      ...parsed,
+    };
+  } catch (error) {
+    console.error('Failed to load tuning from storage', error);
+    return { ...DEFAULT_TUNING };
+  }
+};
+
+const persistTuning = (tuning: TuningConfig) => {
+  if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(TUNING_STORAGE_KEY, JSON.stringify(tuning));
+  } catch (error) {
+    console.error('Failed to save tuning to storage', error);
+  }
+};
+
 interface AppState {
   // Tree state
   trees: string[];
@@ -331,6 +380,9 @@ interface AppState {
 
   // Settings
   settings: Settings;
+
+  // Tuning
+  tuning: TuningConfig;
 
   // Actions
   loadTreeList: () => Promise<void>;
@@ -377,6 +429,11 @@ interface AppState {
   // Automatic bookmark config
   automaticBookmarkConfig: AutomaticBookmarkConfig;
   updateAutomaticBookmarkConfig: (updates: Partial<AutomaticBookmarkConfig>) => void;
+
+  // Tuning actions
+  updateTuning: (updates: Partial<TuningConfig>) => void;
+  addTuningOutput: (output: string) => void;
+  captureDecision: (decision: 'expand' | 'cull', nodeId?: string) => void;
 }
 
 export const useStore = create<AppState>((set, get) => {
@@ -467,6 +524,8 @@ export const useStore = create<AppState>((set, get) => {
     settings: loadSettings(),
 
     automaticBookmarkConfig: persistedAutomaticBookmarkConfig,
+
+    tuning: loadTuning(),
 
   loadTreeList: async () => {
     const treeList = await getTreeListAsync();
@@ -1344,6 +1403,68 @@ export const useStore = create<AppState>((set, get) => {
     const updated = { ...current, ...updates };
     set({ automaticBookmarkConfig: updated });
     persistAutomaticBookmarkConfig(updated);
+  },
+
+  updateTuning: (updates: Partial<TuningConfig>) => {
+    const tuning = get().tuning;
+    const updated = { ...tuning, ...updates };
+    set({ tuning: updated });
+    persistTuning(updated);
+  },
+
+  addTuningOutput: (output: string) => {
+    const tuning = get().tuning;
+    const updated = { ...tuning, outputs: [...tuning.outputs, output] };
+    set({ tuning: updated });
+    persistTuning(updated);
+  },
+
+  captureDecision: (decision: 'expand' | 'cull', nodeId?: string) => {
+    const state = get();
+    const tuning = state.tuning;
+    const tree = state.currentTree;
+
+    if (!tuning.captureDecisions || !tree) {
+      return;
+    }
+
+    // Use provided nodeId or fall back to current node
+    const targetNodeId = nodeId || tree.currentNodeId;
+    const targetNode = tree.nodes.get(targetNodeId);
+    if (!targetNode) {
+      return;
+    }
+
+    // Build context from parent nodes
+    const contextNodes: string[] = [];
+    let parentId = targetNode.parentId;
+    while (parentId) {
+      const parentNode = tree.nodes.get(parentId);
+      if (parentNode) {
+        contextNodes.unshift(parentNode.text);
+        parentId = parentNode.parentId;
+      } else {
+        break;
+      }
+    }
+
+    const context = contextNodes.join('');
+    const trainingEntry = {
+      context,
+      currentNode: targetNode.text,
+      decision,
+      timestamp: Date.now(),
+    };
+
+    // Update tuning state with new training data and output in one operation
+    const updated = {
+      ...tuning,
+      trainingData: [...tuning.trainingData, trainingEntry],
+      outputs: [...tuning.outputs, `Captured ${decision} decision at ${new Date().toLocaleTimeString()}`],
+    };
+
+    set({ tuning: updated });
+    persistTuning(updated);
   },
   };
 });

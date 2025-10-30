@@ -1,4 +1,5 @@
 import { ModelSettings } from '../types';
+import OpenAI from 'openai';
 
 const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -104,8 +105,34 @@ export async function callAssistantModel(
   apiKey: string,
   systemPrompt: string,
   userMessage: string,
-  settings: ModelSettings
+  settings: ModelSettings & { useFinetuned?: boolean },
+  openaiApiKey?: string
 ): Promise<string> {
+  // If using fine-tuned model, call OpenAI API directly
+  if (settings.useFinetuned && openaiApiKey) {
+    return withRetry(async () => {
+      const client = new OpenAI({ apiKey: openaiApiKey, dangerouslyAllowBrowser: true });
+
+      const response = await client.chat.completions.create({
+        model: settings.modelName,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMessage },
+        ],
+        temperature: settings.temperature,
+        top_p: settings.topP,
+        max_tokens: settings.maxTokens,
+      });
+
+      if (!response.choices || response.choices.length === 0) {
+        throw new Error('No response returned from OpenAI API');
+      }
+
+      return response.choices[0].message?.content || '';
+    });
+  }
+
+  // Otherwise use OpenRouter
   return withRetry(async () => {
     const request: OpenRouterRequest = {
       model: settings.modelName,

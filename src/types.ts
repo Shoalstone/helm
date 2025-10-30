@@ -70,7 +70,33 @@ export interface Settings {
   };
   assistant: ModelSettings & {
     savedModels?: string[];
+    useFinetuned?: boolean; // Toggle to use fine-tuned model
   };
+}
+
+export interface TrainingDataEntry {
+  context: string;
+  currentNode: string;
+  decision: 'expand' | 'cull';
+  timestamp: number;
+}
+
+export interface FineTuneModel {
+  customName: string;
+  officialName: string;
+}
+
+export interface TuningConfig {
+  captureDecisions: boolean;
+  trainingData: TrainingDataEntry[];
+  externalDataSource: string | null; // Path to external training data file
+  openaiApiKey: string;
+  fineTunedModelName: string; // User's custom name for the model being created
+  fineTunes: FineTuneModel[]; // List of fine-tuned models with custom names mapped to official names
+  uploadedFileId: string | null;
+  uploadStatus: string | null;
+  currentJobId: string | null;
+  outputs: string[]; // Status messages
 }
 
 export type PanelModule =
@@ -80,6 +106,7 @@ export type PanelModule =
   | 'Copilot'
   | 'Actions'
   | 'Settings'
+  | 'Tuning'
   | null;
 
 export interface PanelConfig {

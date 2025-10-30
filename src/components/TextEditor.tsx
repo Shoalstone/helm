@@ -183,6 +183,12 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(({ fontFamily, 
       const node = tree.nodes.get(tree.currentNodeId);
       if (!node || node.locked) return;
 
+      // Capture expand decision IMMEDIATELY, before async operations
+      // Don't capture if we're on the root node
+      if (node.id !== tree.rootId) {
+        state.captureDecision('expand', node.id);
+      }
+
       if (!state.settings.apiKey) {
         alert('Please set your OpenRouter API key in Settings');
         return;
@@ -326,6 +332,8 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(({ fontFamily, 
       if (node.childIds.length > 0) {
         state.setCurrentNode(node.childIds[0]);
       } else {
+        // Capture cull decision IMMEDIATELY before deleting
+        state.captureDecision('cull', node.id);
         state.deleteNode(node.id);
       }
     });

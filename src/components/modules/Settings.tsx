@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store';
 
 const Settings: React.FC = () => {
-  const { settings, updateSettings } = useStore();
+  const { settings, updateSettings, tuning } = useStore();
   const [expandedSection, setExpandedSection] = useState<string | null>('continuations');
   const [confirmingClearContinuations, setConfirmingClearContinuations] = useState(false);
   const [confirmingClearAssistant, setConfirmingClearAssistant] = useState(false);
@@ -417,6 +417,55 @@ const Settings: React.FC = () => {
                   }
                   className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
                 />
+              </div>
+
+              <div>
+                <label className="flex items-center text-xs font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={settings.assistant.useFinetuned ?? false}
+                    onChange={(e) =>
+                      updateSettings({
+                        assistant: {
+                          ...settings.assistant,
+                          useFinetuned: e.target.checked,
+                        },
+                      })
+                    }
+                    className="mr-2"
+                  />
+                  Use Fine-Tuned Model
+                </label>
+                <p className="text-xs text-gray-500 mt-1 ml-5">
+                  When enabled, model name is interpreted as a fine-tuned model. Enter either a custom name
+                  from the Tuning panel or the full official model name.
+                </p>
+                {settings.assistant.useFinetuned && tuning.fineTunes.length > 0 && (
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        const fineTune = tuning.fineTunes.find((ft) => ft.customName === e.target.value);
+                        if (fineTune) {
+                          updateSettings({
+                            assistant: {
+                              ...settings.assistant,
+                              modelName: fineTune.officialName
+                            },
+                          });
+                        }
+                      }
+                    }}
+                    className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark mt-2"
+                  >
+                    <option value="">Select a fine-tuned model...</option>
+                    {tuning.fineTunes.map((ft, index) => (
+                      <option key={index} value={ft.customName}>
+                        {ft.customName}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             </div>
           )}

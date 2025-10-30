@@ -1,6 +1,7 @@
 import { Tree, ScoutConfig, CopilotConfig, Settings } from '../types';
 import { callContinuationModel, callAssistantModel } from './openrouter';
 import { getBranchText } from './fileSystem';
+import { useStore } from '../store';
 import prompts from '../../prompts.json';
 
 // Get context nodes for vision
@@ -159,11 +160,17 @@ export async function scoutDecision(
       .replace('{context}', contextText || 'No previous context.')
       .replace('{currentNode}', node.text || '<empty>');
 
+    // Get OpenAI API key from store if using fine-tuned model
+    const openaiApiKey = settings.assistant.useFinetuned
+      ? useStore.getState().tuning.openaiApiKey
+      : undefined;
+
     const response = await callAssistantModel(
       apiKey,
       prompts.scout.system,
       userMessage,
-      settings.assistant
+      settings.assistant,
+      openaiApiKey
     );
 
     // Parse for <decision>expand</decision> or <decision>cull</decision> tags
@@ -218,11 +225,17 @@ async function witnessDecision(
       .replace('{parentBranch}', parentContext)
       .replace('{choices}', choicesText || 'No sibling continuations.');
 
+    // Get OpenAI API key from store if using fine-tuned model
+    const openaiApiKey = settings.assistant.useFinetuned
+      ? useStore.getState().tuning.openaiApiKey
+      : undefined;
+
     const response = await callAssistantModel(
       apiKey,
       prompts.witness.system,
       userMessage,
-      settings.assistant
+      settings.assistant,
+      openaiApiKey
     );
 
     // Parse for <choice>X</choice> tag
@@ -271,11 +284,17 @@ export async function copilotDecision(
       .replace('{context}', contextText || 'No previous context.')
       .replace('{currentNode}', node.text || '<empty>');
 
+    // Get OpenAI API key from store if using fine-tuned model
+    const openaiApiKey = settings.assistant.useFinetuned
+      ? useStore.getState().tuning.openaiApiKey
+      : undefined;
+
     const response = await callAssistantModel(
       apiKey,
       prompts.copilot.system,
       userMessage,
-      settings.assistant
+      settings.assistant,
+      openaiApiKey
     );
 
     // Parse for <decision>expand</decision> or <decision>cull</decision> tags

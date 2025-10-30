@@ -17,6 +17,7 @@ export function useKeybindings(scrollToBottom?: () => void, toggleGreyOutReadOnl
     requestScoutStart,
     getNextBookmarkedNode,
     getNextBookmarkedNodeWithHierarchy,
+    captureDecision,
   } = useStore();
 
   const [scoutInvokeMode, setScoutInvokeMode] = useState(false);
@@ -133,6 +134,8 @@ export function useKeybindings(scrollToBottom?: () => void, toggleGreyOutReadOnl
           if (currentNode.childIds.length > 0) {
             setCurrentNode(currentNode.childIds[0]);
           } else {
+            // Capture cull decision IMMEDIATELY at keybind press, before deleting
+            captureDecision('cull', currentNode.id);
             deleteNode(currentNode.id);
           }
         }
@@ -204,6 +207,12 @@ export function useKeybindings(scrollToBottom?: () => void, toggleGreyOutReadOnl
       ) {
         e.preventDefault();
         if (!currentNode.locked) {
+          // Capture expand decision IMMEDIATELY at keybind press, before any async operations
+          // Don't capture if we're on the root node
+          if (currentNode.id !== currentTree.rootId) {
+            captureDecision('expand', currentNode.id);
+          }
+
           (async () => {
             if (!settings.apiKey) {
               alert('Please set your OpenRouter API key in Settings');
@@ -224,6 +233,7 @@ export function useKeybindings(scrollToBottom?: () => void, toggleGreyOutReadOnl
               );
 
               const latestState = useStore.getState();
+
               if (childIds.length > 0 && latestState.currentTree?.currentNodeId === currentNode.id) {
                 // Automatically focus the first generated child when the user stayed on the parent
                 latestState.setCurrentNode(childIds[0]);
@@ -319,6 +329,7 @@ export function useKeybindings(scrollToBottom?: () => void, toggleGreyOutReadOnl
     scoutInvokeMode,
     scrollToBottom,
     toggleGreyOutReadOnly,
+    captureDecision,
   ]);
 
   return { scoutInvokeMode };

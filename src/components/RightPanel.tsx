@@ -7,12 +7,13 @@ import Tree from './modules/Tree';
 import Graph from './modules/Graph';
 import Actions from './modules/Actions';
 import Settings from './modules/Settings';
+import Tuning from './modules/Tuning';
 
 const RightPanel: React.FC = () => {
   const { rightPanel, updatePanels } = useStore();
   const [splitRatio, setSplitRatio] = useState(50);
 
-  const modules: PanelModule[] = ['Tree', 'Graph', 'Agents', 'Copilot', 'Actions', 'Settings', null];
+  const modules: PanelModule[] = ['Tree', 'Graph', 'Agents', 'Copilot', 'Actions', 'Settings', 'Tuning', null];
 
   const renderModule = (module: PanelModule) => {
     switch (module) {
@@ -28,6 +29,8 @@ const RightPanel: React.FC = () => {
         return <Actions />;
       case 'Settings':
         return <Settings />;
+      case 'Tuning':
+        return <Tuning />;
       default:
         return null;
     }
