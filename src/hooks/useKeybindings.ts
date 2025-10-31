@@ -135,8 +135,17 @@ export function useKeybindings(scrollToBottom?: () => void, toggleGreyOutReadOnl
           if (currentNode.childIds.length > 0) {
             setCurrentNode(currentNode.childIds[0]);
           } else {
-            // Capture cull decision IMMEDIATELY at keybind press, before deleting
-            captureDecision('cull', currentNode.id);
+            // Check if parent is locked before capturing cull decision
+            const parent = currentTree.nodes.get(currentNode.parentId!);
+            const parentIsLocked = parent && parent.locked &&
+              parent.lockReason !== 'witness-active' &&
+              parent.lockReason !== 'copilot-deciding' &&
+              parent.lockReason !== 'trident-active';
+
+            // Only capture cull decision if the node can actually be culled
+            if (!parentIsLocked && parent) {
+              captureDecision('cull', currentNode.id);
+            }
             deleteNode(currentNode.id);
           }
         }

@@ -13,6 +13,8 @@ import {
 const Tuning: React.FC = () => {
   const { tuning, updateTuning, addTuningOutput } = useStore();
   const [confirmingClearData, setConfirmingClearData] = useState(false);
+  const [renameFineTuneOldName, setRenameFineTuneOldName] = useState('');
+  const [renameFineTuneNewName, setRenameFineTuneNewName] = useState('');
   const [deleteFineTuneName, setDeleteFineTuneName] = useState('');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmingCancelJob, setConfirmingCancelJob] = useState(false);
@@ -309,6 +311,26 @@ const Tuning: React.FC = () => {
     }
   };
 
+  const handleRenameFineTune = () => {
+    const trimmedOldName = renameFineTuneOldName.trim();
+    const trimmedNewName = renameFineTuneNewName.trim();
+    if (!trimmedOldName || !trimmedNewName) return;
+
+    const fineTuneToRename = tuning.fineTunes.find((ft) => ft.customName === trimmedOldName);
+    if (!fineTuneToRename) {
+      addTuningOutput(`Error: Fine-tune "${trimmedOldName}" not found`);
+      return;
+    }
+
+    const updatedFineTunes = tuning.fineTunes.map((ft) =>
+      ft.customName === trimmedOldName ? { ...ft, customName: trimmedNewName } : ft
+    );
+    updateTuning({ fineTunes: updatedFineTunes });
+    addTuningOutput(`Renamed "${trimmedOldName}" to "${trimmedNewName}"`);
+    setRenameFineTuneOldName('');
+    setRenameFineTuneNewName('');
+  };
+
   const handleDeleteFineTune = () => {
     const trimmedName = deleteFineTuneName.trim();
     if (!trimmedName) return;
@@ -570,6 +592,33 @@ const Tuning: React.FC = () => {
               ))
             )}
           </div>
+        </div>
+
+        {/* Rename Fine-Tune */}
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-gray-700 mb-1">Rename Fine-Tune</label>
+          <input
+            type="text"
+            value={renameFineTuneOldName}
+            onChange={(e) => setRenameFineTuneOldName(e.target.value)}
+            className="w-full px-2 py-1 text-xs rounded border border-sky-medium focus:outline-none focus:ring-2 focus:ring-sky-dark mb-2"
+            placeholder="Current name"
+          />
+          <input
+            type="text"
+            value={renameFineTuneNewName}
+            onChange={(e) => setRenameFineTuneNewName(e.target.value)}
+            className="w-full px-2 py-1 text-xs rounded border border-sky-medium focus:outline-none focus:ring-2 focus:ring-sky-dark mb-2"
+            placeholder="New name"
+          />
+          <button
+            onClick={handleRenameFineTune}
+            disabled={!renameFineTuneOldName.trim() || !renameFineTuneNewName.trim()}
+            className="w-full px-3 py-1 text-xs rounded bg-sky-medium hover:bg-sky-dark text-gray-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Rename
+          </button>
+          <p className="text-xs text-gray-500 mt-1">Only renames locally; official name unchanged.</p>
         </div>
 
         {/* Delete Fine-Tune */}

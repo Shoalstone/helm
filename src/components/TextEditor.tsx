@@ -333,8 +333,17 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(({ fontFamily, 
       if (node.childIds.length > 0) {
         state.setCurrentNode(node.childIds[0]);
       } else {
-        // Capture cull decision IMMEDIATELY before deleting
-        state.captureDecision('cull', node.id);
+        // Check if parent is locked before capturing cull decision
+        const parent = tree.nodes.get(node.parentId!);
+        const parentIsLocked = parent && parent.locked &&
+          parent.lockReason !== 'witness-active' &&
+          parent.lockReason !== 'copilot-deciding' &&
+          parent.lockReason !== 'trident-active';
+
+        // Only capture cull decision if the node can actually be culled
+        if (!parentIsLocked && parent) {
+          state.captureDecision('cull', node.id);
+        }
         state.deleteNode(node.id);
       }
     });
