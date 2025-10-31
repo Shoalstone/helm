@@ -667,7 +667,7 @@ const Tuning: React.FC = () => {
         {/* Fine-Tuning Job Controls */}
         <div className="mb-4 space-y-2">
           <p className="text-xs text-gray-500 px-1 mb-2">
-            Fine-tuning can be expensive depending on the dataset size and settings; if you're new, don't put a lot of money in your account. A place to start is 200 decisions, 2 epochs. Try 1 epoch once you have many decisions.
+            Fine-tuning can be expensive with large training runs; if you're new, don't put a lot of money in your account. Try starting with 300 decisions. Keep epochs low to prevent overfitting.
           </p>
           <button
             onClick={handleBeginFineTuning}

@@ -328,8 +328,8 @@ const DEFAULT_TUNING: TuningConfig = {
   currentJobId: null,
   outputs: [],
   contextDepth: 2,
-  epochs: 2,
-  batchSize: 6,
+  epochs: 1,
+  batchSize: 4,
   learningRate: 'auto',
 };
 
