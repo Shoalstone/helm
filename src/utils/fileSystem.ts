@@ -424,3 +424,217 @@ export async function importTree(): Promise<Tree | null> {
 
   return tree;
 }
+
+// Unroll tree branches (leaf nodes with their parent chains)
+export async function unrollTreeBranches(tree: Tree): Promise<string | null> {
+  if (!isElectron) {
+    throw new Error('File system not available');
+  }
+
+  // Helper function to find all leaf nodes
+  const findLeafNodes = (nodeId: string): string[] => {
+    const node = tree.nodes.get(nodeId);
+    if (!node) return [];
+
+    // If node has no children, it's a leaf
+    if (node.childIds.length === 0) {
+      return [nodeId];
+    }
+
+    // Otherwise, recurse to find leaves in children
+    const leaves: string[] = [];
+    node.childIds.forEach(childId => {
+      leaves.push(...findLeafNodes(childId));
+    });
+
+    return leaves;
+  };
+
+  // Helper function to get full branch text from root to a specific node
+  const getBranchNodes = (nodeId: string): TreeNode[] => {
+    const nodes: TreeNode[] = [];
+    let currentId: string | null = nodeId;
+
+    while (currentId) {
+      const node = tree.nodes.get(currentId);
+      if (!node) break;
+
+      nodes.unshift(node);
+      currentId = node.parentId;
+    }
+
+    return nodes;
+  };
+
+  // Find all leaf nodes
+  const leafNodeIds = findLeafNodes(tree.rootId);
+
+  let output = '';
+  output += 'TREE BRANCHES (Leaf Nodes with Full Context)\n';
+  output += '=============================================\n\n';
+  output += `Total branches: ${leafNodeIds.length}\n\n`;
+
+  // Output each branch
+  leafNodeIds.forEach((leafId, index) => {
+    const branchNodes = getBranchNodes(leafId);
+
+    output += `BRANCH ${index + 1} of ${leafNodeIds.length}\n`;
+    output += '─'.repeat(40) + '\n\n';
+
+    // Show path labels
+    const pathLabels = branchNodes.map(node =>
+      node.text.substring(0, 50).replace(/\n/g, ' ') || '(empty)'
+    );
+    output += `[Path: ${pathLabels.join(' > ')}]\n`;
+    output += `[Leaf Node ID: ${leafId}]\n\n`;
+
+    // Output full text of the branch
+    branchNodes.forEach((node) => {
+      output += node.text || '(empty)';
+    });
+
+    // Add separator between branches (but not after the last one)
+    if (index < leafNodeIds.length - 1) {
+      output += '\n\n' + '═'.repeat(40) + '\n\n';
+    }
+  });
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const defaultFilename = `tree_${tree.name}_branches_${timestamp}.txt`;
+
+  // Show save dialog
+  const filepath = await window.electronAPI.showSaveDialog({
+    defaultPath: defaultFilename,
+    filters: [
+      { name: 'Text Files', extensions: ['txt'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  });
+
+  // If user cancelled, return null
+  if (!filepath) {
+    return null;
+  }
+
+  await window.electronAPI.writeFile(filepath, output);
+
+  return filepath;
+}
+
+// Unroll tree into a human-readable format
+export async function unrollTree(tree: Tree): Promise<string | null> {
+  if (!isElectron) {
+    throw new Error('File system not available');
+  }
+
+  // Helper function to build tree structure visualization
+  const buildTreeIndex = (nodeId: string, prefix: string = '', isLast: boolean = true): string[] => {
+    const node = tree.nodes.get(nodeId);
+    if (!node) return [];
+
+    const lines: string[] = [];
+    const connector = isLast ? '└─ ' : '├─ ';
+    const nodeLabel = node.text.substring(0, 50).replace(/\n/g, ' ') || '(empty)';
+
+    lines.push(prefix + connector + nodeLabel);
+
+    const childCount = node.childIds.length;
+    node.childIds.forEach((childId, index) => {
+      const isLastChild = index === childCount - 1;
+      const childPrefix = prefix + (isLast ? '   ' : '│  ');
+      lines.push(...buildTreeIndex(childId, childPrefix, isLastChild));
+    });
+
+    return lines;
+  };
+
+  // Helper function to get node path
+  const getNodePath = (nodeId: string): string[] => {
+    const path: string[] = [];
+    let currentId: string | null = nodeId;
+
+    while (currentId) {
+      const node = tree.nodes.get(currentId);
+      if (!node) break;
+
+      const label = node.text.substring(0, 50).replace(/\n/g, ' ') || '(empty)';
+      path.unshift(label);
+      currentId = node.parentId;
+    }
+
+    return path;
+  };
+
+  // Helper function to collect all nodes in depth-first order
+  const collectNodes = (nodeId: string): string[] => {
+    const node = tree.nodes.get(nodeId);
+    if (!node) return [];
+
+    const nodes: string[] = [nodeId];
+    node.childIds.forEach(childId => {
+      nodes.push(...collectNodes(childId));
+    });
+
+    return nodes;
+  };
+
+  // Build the tree structure index
+  const rootNode = tree.nodes.get(tree.rootId);
+  const rootLabel = rootNode?.text.substring(0, 50).replace(/\n/g, ' ') || '(empty)';
+
+  let output = '';
+  output += 'TREE STRUCTURE INDEX\n';
+  output += '====================\n\n';
+  output += rootLabel + '\n';
+
+  if (rootNode) {
+    rootNode.childIds.forEach((childId, index) => {
+      const isLast = index === rootNode.childIds.length - 1;
+      output += buildTreeIndex(childId, '', isLast).join('\n') + '\n';
+    });
+  }
+
+  output += '\n\n';
+  output += 'FULL TREE CONTENT\n';
+  output += '=================\n\n';
+
+  // Collect all nodes in depth-first order
+  const allNodeIds = collectNodes(tree.rootId);
+
+  // Output each node with its path and content
+  allNodeIds.forEach((nodeId, index) => {
+    const node = tree.nodes.get(nodeId);
+    if (!node) return;
+
+    const path = getNodePath(nodeId);
+    output += `[Path: ${path.join(' > ')}]\n`;
+    output += `[Node ID: ${nodeId}]\n`;
+    output += node.text || '(empty)';
+
+    // Add separator between nodes (but not after the last one)
+    if (index < allNodeIds.length - 1) {
+      output += '\n\n────────────────────────────────────────\n\n';
+    }
+  });
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const defaultFilename = `tree_${tree.name}_unrolled_${timestamp}.txt`;
+
+  // Show save dialog
+  const filepath = await window.electronAPI.showSaveDialog({
+    defaultPath: defaultFilename,
+    filters: [
+      { name: 'Text Files', extensions: ['txt'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  });
+
+  // If user cancelled, return null
+  if (!filepath) {
+    return null;
+  }
+
+  await window.electronAPI.writeFile(filepath, output);
+
+  return filepath;
+}

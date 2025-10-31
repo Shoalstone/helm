@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../store';
-import { exportTree, importTree } from '../utils/fileSystem';
+import { exportTree, importTree, unrollTree, unrollTreeBranches } from '../utils/fileSystem';
 
 const Header: React.FC = () => {
   const [showNewTreeDialog, setShowNewTreeDialog] = useState(false);
@@ -12,6 +12,7 @@ const Header: React.FC = () => {
   const [showExtractDialog, setShowExtractDialog] = useState(false);
   const [extractTreeName, setExtractTreeName] = useState('');
   const [extractError, setExtractError] = useState('');
+  const [showUnrollDialog, setShowUnrollDialog] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showTreeButtons, setShowTreeButtons] = useState(true);
@@ -81,6 +82,26 @@ const Header: React.FC = () => {
       } catch (error) {
         console.error('Export error:', error);
         alert('Failed to export tree');
+      }
+    }
+  };
+
+  const handleUnrollTree = async (mode: 'all' | 'branches') => {
+    if (currentTree) {
+      try {
+        const filepath = mode === 'all'
+          ? await unrollTree(currentTree)
+          : await unrollTreeBranches(currentTree);
+
+        if (filepath) {
+          alert(`Tree unrolled to ${filepath}`);
+        }
+        // If filepath is null, user cancelled - no need to show a message
+        setShowUnrollDialog(false);
+      } catch (error) {
+        console.error('Unroll error:', error);
+        alert('Failed to unroll tree');
+        setShowUnrollDialog(false);
       }
     }
   };
@@ -231,6 +252,14 @@ const Header: React.FC = () => {
               </button>
 
               <button
+                onClick={() => setShowUnrollDialog(true)}
+                disabled={!currentTree}
+                className="px-3 py-1 rounded-lg bg-sky-accent text-gray-800 text-sm hover:bg-sky-light transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Unroll Tree
+              </button>
+
+              <button
                 onClick={() => setShowExtractDialog(true)}
                 disabled={!currentTree}
                 className="px-3 py-1 rounded-lg bg-sky-accent text-gray-800 text-sm hover:bg-sky-light transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
@@ -304,7 +333,7 @@ const Header: React.FC = () => {
                   setNewTreeName('');
                   setCreateError('');
                 }}
-                className="flex-1 px-4 py-2 rounded-lg bg-gray-300 text-gray-800 hover:bg-gray-400 transition-colors"
+                className="flex-1 px-4 py-2 rounded-lg bg-sky-accent text-gray-800 hover:bg-sky-medium transition-colors"
               >
                 Cancel
               </button>
@@ -342,7 +371,7 @@ const Header: React.FC = () => {
                   setRenameTreeName('');
                   setRenameError('');
                 }}
-                className="flex-1 px-4 py-2 rounded-lg bg-gray-300 text-gray-800 hover:bg-gray-400 transition-colors"
+                className="flex-1 px-4 py-2 rounded-lg bg-sky-accent text-gray-800 hover:bg-sky-medium transition-colors"
               >
                 Cancel
               </button>
@@ -380,7 +409,47 @@ const Header: React.FC = () => {
                   setExtractTreeName('');
                   setExtractError('');
                 }}
-                className="flex-1 px-4 py-2 rounded-lg bg-gray-300 text-gray-800 hover:bg-gray-400 transition-colors"
+                className="flex-1 px-4 py-2 rounded-lg bg-sky-accent text-gray-800 hover:bg-sky-medium transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUnrollDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+          <div className="bg-sky-light p-6 rounded-xl shadow-2xl w-96">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">Unroll Tree</h3>
+            <p className="text-sm text-gray-700 mb-4">Choose how to export the tree:</p>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => handleUnrollTree('all')}
+                className="w-full px-4 py-3 rounded-lg bg-white hover:bg-sky-accent transition-colors text-left border border-sky-medium"
+              >
+                <div className="font-semibold text-gray-800">All Nodes</div>
+                <div className="text-xs text-gray-600 mt-1">
+                  All nodes with full structure visualization
+                </div>
+              </button>
+
+              <button
+                onClick={() => handleUnrollTree('branches')}
+                className="w-full px-4 py-3 rounded-lg bg-white hover:bg-sky-accent transition-colors text-left border border-sky-medium"
+              >
+                <div className="font-semibold text-gray-800">Leaf Branches</div>
+                <div className="text-xs text-gray-600 mt-1">
+                  Only leaf nodes, appended with all parents
+                </div>
+              </button>
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => setShowUnrollDialog(false)}
+                className="flex-1 px-4 py-2 rounded-lg bg-sky-accent text-gray-800 hover:bg-sky-medium transition-colors"
               >
                 Cancel
               </button>

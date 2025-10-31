@@ -128,9 +128,14 @@ const RightPanel: React.FC = () => {
                 const startY = e.clientY;
                 const startRatio = splitRatio;
                 const panelHeight = e.currentTarget.parentElement!.clientHeight;
+                let hasMoved = false;
 
                 const handleMouseMove = (moveEvent: MouseEvent) => {
                   const deltaY = moveEvent.clientY - startY;
+                  // Consider it a drag if moved more than 3 pixels
+                  if (Math.abs(deltaY) > 3) {
+                    hasMoved = true;
+                  }
                   const deltaPercent = (deltaY / panelHeight) * 100;
                   const newRatio = Math.max(10, Math.min(90, startRatio + deltaPercent));
                   setSplitRatio(newRatio);
@@ -140,6 +145,11 @@ const RightPanel: React.FC = () => {
                   document.body.style.userSelect = '';
                   document.removeEventListener('mousemove', handleMouseMove);
                   document.removeEventListener('mouseup', handleMouseUp);
+
+                  // If the user didn't drag, reset to default ratio
+                  if (!hasMoved) {
+                    setSplitRatio(50);
+                  }
                 };
 
                 document.addEventListener('mousemove', handleMouseMove);
