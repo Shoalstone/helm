@@ -5,6 +5,7 @@ export interface TreeNode {
   childIds: string[];
   locked: boolean;
   lockReason?: 'expanding' | 'scout-active' | 'witness-active' | 'copilot-deciding' | 'trident-active';
+  everExpanded?: boolean; // Track if node has been expanded before
 }
 
 export interface Tree {
@@ -74,11 +75,21 @@ export interface Settings {
   };
 }
 
-export interface TrainingDataEntry {
+export interface TrainingDataDecisionEntry {
+  type: 'decision';
   context: string;
   currentNode: string;
   decision: 'expand' | 'cull';
 }
+
+export interface TrainingDataChoiceEntry {
+  type: 'choice';
+  context: string;
+  continuations: string[];
+  choiceIndex: number;
+}
+
+export type TrainingDataEntry = TrainingDataDecisionEntry | TrainingDataChoiceEntry;
 
 export interface FineTuneModel {
   customName: string;
@@ -87,7 +98,8 @@ export interface FineTuneModel {
 
 export interface TuningConfig {
   captureDecisions: boolean;
-  trainingData: TrainingDataEntry[];
+  captureSiblingPreference: boolean; // Capture best continuation when expanding first sibling
+  trainingData: TrainingDataEntry[]; // Combined array for both decision and choice entries
   externalDataSource: string | null; // Path to external training data file
   openaiApiKey: string;
   fineTunedModelName: string; // User's custom name for the model being created

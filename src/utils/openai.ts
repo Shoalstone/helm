@@ -6,26 +6,51 @@ export async function uploadTrainingFile(apiKey: string, data: TrainingDataEntry
 
   // Convert training data to JSONL format
   const jsonlLines = data.map(entry => {
-    const assistantContent = entry.decision === 'expand'
-      ? '<decision>expand</decision>'
-      : '<decision>cull</decision>';
+    if (entry.type === 'choice') {
+      // Format choice entries (sibling preference)
+      const continuationsText = entry.continuations
+        .map((text, idx) => `Choice ${idx + 1}:\n${text}`)
+        .join('\n\n');
 
-    return JSON.stringify({
-      messages: [
-        {
-          role: 'system',
-          content: 'You are choosing whether to expand or cull text continuations.'
-        },
-        {
-          role: 'user',
-          content: `Choose whether to expand or cull this continuation.\n\nPrevious context:\n${entry.context}\n\nCurrent node:\n${entry.currentNode}\n\nPlease end your response with either <decision>expand</decision> or <decision>cull</decision>.`
-        },
-        {
-          role: 'assistant',
-          content: assistantContent
-        }
-      ]
-    });
+      return JSON.stringify({
+        messages: [
+          {
+            role: 'system',
+            content: 'You are choosing the best text continuation.'
+          },
+          {
+            role: 'user',
+            content: `Choose the best continuation.\n\nPrevious context:\n${entry.context}\n\nContinuations:\n${continuationsText}\n\nPlease end your response with <choice>X</choice> where X is the number of the best continuation.`
+          },
+          {
+            role: 'assistant',
+            content: `<choice>${entry.choiceIndex + 1}</choice>`
+          }
+        ]
+      });
+    } else {
+      // Format decision entries (expand/cull)
+      const assistantContent = entry.decision === 'expand'
+        ? '<decision>expand</decision>'
+        : '<decision>cull</decision>';
+
+      return JSON.stringify({
+        messages: [
+          {
+            role: 'system',
+            content: 'You are choosing whether to expand or cull text continuations.'
+          },
+          {
+            role: 'user',
+            content: `Choose whether to expand or cull this continuation.\n\nPrevious context:\n${entry.context}\n\nCurrent node:\n${entry.currentNode}\n\nPlease end your response with either <decision>expand</decision> or <decision>cull</decision>.`
+          },
+          {
+            role: 'assistant',
+            content: assistantContent
+          }
+        ]
+      });
+    }
   });
 
   const jsonlContent = jsonlLines.join('\n');
@@ -140,26 +165,51 @@ export async function listFineTunes(apiKey: string): Promise<FineTuneModel[]> {
 export async function exportTrainingData(data: TrainingDataEntry[]): Promise<string> {
   // Convert to JSONL format for export
   const jsonlLines = data.map(entry => {
-    const assistantContent = entry.decision === 'expand'
-      ? '<decision>expand</decision>'
-      : '<decision>cull</decision>';
+    if (entry.type === 'choice') {
+      // Format choice entries (sibling preference)
+      const continuationsText = entry.continuations
+        .map((text, idx) => `Choice ${idx + 1}:\n${text}`)
+        .join('\n\n');
 
-    return JSON.stringify({
-      messages: [
-        {
-          role: 'system',
-          content: 'You are choosing whether to expand or cull text continuations.'
-        },
-        {
-          role: 'user',
-          content: `Choose whether to expand or cull this continuation.\n\nPrevious context:\n${entry.context}\n\nCurrent node:\n${entry.currentNode}\n\nPlease end your response with either <decision>expand</decision> or <decision>cull</decision>.`
-        },
-        {
-          role: 'assistant',
-          content: assistantContent
-        }
-      ]
-    });
+      return JSON.stringify({
+        messages: [
+          {
+            role: 'system',
+            content: 'You are choosing the best text continuation.'
+          },
+          {
+            role: 'user',
+            content: `Choose the best continuation.\n\nPrevious context:\n${entry.context}\n\nContinuations:\n${continuationsText}\n\nPlease end your response with <choice>X</choice> where X is the number of the best continuation.`
+          },
+          {
+            role: 'assistant',
+            content: `<choice>${entry.choiceIndex + 1}</choice>`
+          }
+        ]
+      });
+    } else {
+      // Format decision entries (expand/cull)
+      const assistantContent = entry.decision === 'expand'
+        ? '<decision>expand</decision>'
+        : '<decision>cull</decision>';
+
+      return JSON.stringify({
+        messages: [
+          {
+            role: 'system',
+            content: 'You are choosing whether to expand or cull text continuations.'
+          },
+          {
+            role: 'user',
+            content: `Choose whether to expand or cull this continuation.\n\nPrevious context:\n${entry.context}\n\nCurrent node:\n${entry.currentNode}\n\nPlease end your response with either <decision>expand</decision> or <decision>cull</decision>.`
+          },
+          {
+            role: 'assistant',
+            content: assistantContent
+          }
+        ]
+      });
+    }
   });
 
   return jsonlLines.join('\n');
@@ -175,24 +225,54 @@ export async function importTrainingData(jsonlContent: string): Promise<Training
       if (parsed.messages && Array.isArray(parsed.messages)) {
         const userMessage = parsed.messages.find((m: any) => m.role === 'user');
         const assistantMessage = parsed.messages.find((m: any) => m.role === 'assistant');
+        const systemMessage = parsed.messages.find((m: any) => m.role === 'system');
 
-        if (userMessage && assistantMessage) {
-          // Extract context and currentNode from user message
+        if (userMessage && assistantMessage && systemMessage) {
           const userContent = userMessage.content;
-          const contextMatch = userContent.match(/Previous context:\n(.*?)\n\nCurrent node:/s);
-          const nodeMatch = userContent.match(/Current node:\n(.*?)\n\nPlease end/s);
 
-          const context = contextMatch ? contextMatch[1] : '';
-          const currentNode = nodeMatch ? nodeMatch[1] : '';
+          // Check if this is a choice entry or decision entry
+          if (systemMessage.content.includes('best text continuation')) {
+            // This is a choice entry
+            const contextMatch = userContent.match(/Previous context:\n(.*?)\n\nContinuations:/s);
+            const context = contextMatch ? contextMatch[1] : '';
 
-          // Extract decision from assistant message
-          const decision = assistantMessage.content.includes('expand') ? 'expand' : 'cull';
+            // Extract continuations
+            const continuationsMatch = userContent.match(/Continuations:\n(.*?)\n\nPlease end/s);
+            if (continuationsMatch) {
+              const continuationsText = continuationsMatch[1];
+              const continuations = continuationsText
+                .split(/\n\nChoice \d+:\n/)
+                .filter((text: string) => text.trim().length > 0);
 
-          entries.push({
-            context,
-            currentNode,
-            decision: decision as 'expand' | 'cull',
-          });
+              // Extract choice index from assistant message
+              const choiceMatch = assistantMessage.content.match(/<choice>(\d+)<\/choice>/);
+              const choiceIndex = choiceMatch ? parseInt(choiceMatch[1]) - 1 : 0;
+
+              entries.push({
+                type: 'choice',
+                context,
+                continuations,
+                choiceIndex,
+              });
+            }
+          } else {
+            // This is a decision entry
+            const contextMatch = userContent.match(/Previous context:\n(.*?)\n\nCurrent node:/s);
+            const nodeMatch = userContent.match(/Current node:\n(.*?)\n\nPlease end/s);
+
+            const context = contextMatch ? contextMatch[1] : '';
+            const currentNode = nodeMatch ? nodeMatch[1] : '';
+
+            // Extract decision from assistant message
+            const decision = assistantMessage.content.includes('expand') ? 'expand' : 'cull';
+
+            entries.push({
+              type: 'decision',
+              context,
+              currentNode,
+              decision: decision as 'expand' | 'cull',
+            });
+          }
         }
       }
     } catch (error) {

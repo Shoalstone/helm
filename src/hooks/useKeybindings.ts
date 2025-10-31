@@ -18,6 +18,7 @@ export function useKeybindings(scrollToBottom?: () => void, toggleGreyOutReadOnl
     getNextBookmarkedNode,
     getNextBookmarkedNodeWithHierarchy,
     captureDecision,
+    markNodeExpanded,
   } = useStore();
 
   const [scoutInvokeMode, setScoutInvokeMode] = useState(false);
@@ -211,6 +212,7 @@ export function useKeybindings(scrollToBottom?: () => void, toggleGreyOutReadOnl
           // Don't capture if we're on the root node
           if (currentNode.id !== currentTree.rootId) {
             captureDecision('expand', currentNode.id);
+            markNodeExpanded(currentNode.id);
           }
 
           (async () => {

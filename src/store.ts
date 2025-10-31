@@ -317,6 +317,7 @@ const persistCurrentTreeId = (treeId: string | null) => {
 
 const DEFAULT_TUNING: TuningConfig = {
   captureDecisions: false,
+  captureSiblingPreference: false,
   trainingData: [],
   externalDataSource: null,
   openaiApiKey: '',
@@ -326,7 +327,7 @@ const DEFAULT_TUNING: TuningConfig = {
   uploadStatus: null,
   currentJobId: null,
   outputs: [],
-  contextDepth: 4,
+  contextDepth: 2,
   epochs: 2,
   batchSize: 6,
   learningRate: 'auto',
@@ -438,6 +439,7 @@ interface AppState {
   updateTuning: (updates: Partial<TuningConfig>) => void;
   addTuningOutput: (output: string) => void;
   captureDecision: (decision: 'expand' | 'cull', nodeId?: string) => void;
+  markNodeExpanded: (nodeId: string) => void;
 }
 
 export const useStore = create<AppState>((set, get) => {
@@ -1428,7 +1430,7 @@ export const useStore = create<AppState>((set, get) => {
     const tuning = state.tuning;
     const tree = state.currentTree;
 
-    if (!tuning.captureDecisions || !tree) {
+    if (!tree) {
       return;
     }
 
@@ -1455,21 +1457,74 @@ export const useStore = create<AppState>((set, get) => {
     }
 
     const context = contextNodes.join('');
-    const trainingEntry = {
-      context,
-      currentNode: targetNode.text,
-      decision,
-    };
+    const newEntries: any[] = [];
+    const outputs: string[] = [];
 
-    // Update tuning state with new training data and output in one operation
-    const updated = {
-      ...tuning,
-      trainingData: [...tuning.trainingData, trainingEntry],
-      outputs: [...tuning.outputs, `Captured ${decision} decision`],
-    };
+    // Handle sibling preference capture (for expand only)
+    if (decision === 'expand' && tuning.captureSiblingPreference && targetNode.parentId) {
+      const parent = tree.nodes.get(targetNode.parentId);
+      if (parent) {
+        const siblings = parent.childIds
+          .map(id => tree.nodes.get(id))
+          .filter((n): n is TreeNode => n !== undefined);
 
-    set({ tuning: updated });
-    persistTuning(updated);
+        // Only record if there are at least 2 siblings (a real choice)
+        // and none of the siblings have been expanded yet
+        if (siblings.length >= 2 && siblings.every(s => !s.everExpanded)) {
+          // This is the first expansion among siblings
+          const continuations = siblings.map(s => s.text);
+          const choiceIndex = siblings.findIndex(s => s.id === targetNode.id);
+
+          if (choiceIndex !== -1) {
+            newEntries.push({
+              type: 'choice',
+              context,
+              continuations,
+              choiceIndex,
+            });
+            outputs.push('Captured sibling preference choice');
+          }
+        }
+      }
+    }
+
+    // Handle expand/cull decision capture (only if not already expanded)
+    if (tuning.captureDecisions && !targetNode.everExpanded) {
+      newEntries.push({
+        type: 'decision',
+        context,
+        currentNode: targetNode.text,
+        decision,
+      });
+      outputs.push(`Captured ${decision} decision`);
+    }
+
+    // Update tuning state if we have new entries
+    if (newEntries.length > 0) {
+      const updated = {
+        ...tuning,
+        trainingData: [...tuning.trainingData, ...newEntries],
+        outputs: [...tuning.outputs, ...outputs],
+      };
+
+      set({ tuning: updated });
+      persistTuning(updated);
+    }
+  },
+
+  markNodeExpanded: (nodeId: string) => {
+    const tree = get().currentTree;
+    if (!tree) return;
+
+    const node = tree.nodes.get(nodeId);
+    if (!node) return;
+
+    // Mark the node as ever expanded
+    const updatedNode = { ...node, everExpanded: true };
+    tree.nodes.set(nodeId, updatedNode);
+
+    set({ currentTree: { ...tree, nodes: new Map(tree.nodes) } });
+    flushTreeSave();
   },
   };
 });

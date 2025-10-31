@@ -187,6 +187,7 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(({ fontFamily, 
       // Don't capture if we're on the root node
       if (node.id !== tree.rootId) {
         state.captureDecision('expand', node.id);
+        state.markNodeExpanded(node.id);
       }
 
       if (!state.settings.apiKey) {

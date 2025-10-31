@@ -387,8 +387,7 @@ const Tuning: React.FC = () => {
             Capture Decisions
           </label>
           <p className="text-xs text-gray-500 mt-1">
-            Captures when you expand or cull a node. For best results, turn this off before you cull nodes
-            you've expanded with it on, to avoid contradiction.
+            Captures when you expand or cull a node that you haven't yet expanded.
           </p>
           <p className="text-xs text-gray-600 mt-1">
             Current data: {currentDataCount} entries
@@ -405,6 +404,21 @@ const Tuning: React.FC = () => {
               className="w-full px-2 py-1 text-xs rounded border border-sky-medium focus:outline-none focus:ring-2 focus:ring-sky-dark"
             />
             <p className="text-xs text-gray-500 mt-1">Number of parent nodes to include as context</p>
+          </div>
+
+          <div className="mt-3">
+            <label className="flex items-center text-xs font-medium text-gray-700">
+              <input
+                type="checkbox"
+                checked={tuning.captureSiblingPreference}
+                onChange={(e) => updateTuning({ captureSiblingPreference: e.target.checked })}
+                className="mr-2"
+              />
+              Capture Sibling Preference
+            </label>
+            <p className="text-xs text-gray-500 mt-1">
+              Captures when you expand a node when none of its siblings have been expanded; records it as the best continuation.
+            </p>
           </div>
         </div>
 
@@ -604,7 +618,7 @@ const Tuning: React.FC = () => {
         {/* Fine-Tuning Job Controls */}
         <div className="mb-4 space-y-2">
           <p className="text-xs text-gray-500 px-1 mb-2">
-            Fine-tuning can be expensive depending on the dataset size and settings; if you're new, don't put a lot of money in your account. A place to start is 200 decisions, 2 epochs.
+            Fine-tuning can be expensive depending on the dataset size and settings; if you're new, don't put a lot of money in your account. A place to start is 200 decisions, 2 epochs. Try 1 epoch once you have many decisions.
           </p>
           <button
             onClick={handleBeginFineTuning}
