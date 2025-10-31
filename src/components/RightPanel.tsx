@@ -50,9 +50,14 @@ const RightPanel: React.FC = () => {
 
           const startX = e.clientX;
           const startWidth = panelWidth;
+          let hasMoved = false;
 
           const handleMouseMove = (moveEvent: MouseEvent) => {
             const deltaX = startX - moveEvent.clientX; // Inverted for right panel
+            // Consider it a drag if moved more than 3 pixels
+            if (Math.abs(deltaX) > 3) {
+              hasMoved = true;
+            }
             const newWidth = Math.max(200, Math.min(600, startWidth + deltaX));
             setPanelWidth(newWidth);
           };
@@ -61,6 +66,11 @@ const RightPanel: React.FC = () => {
             document.body.style.userSelect = '';
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
+
+            // If the user didn't drag, reset to default width
+            if (!hasMoved) {
+              setPanelWidth(320);
+            }
           };
 
           document.addEventListener('mousemove', handleMouseMove);

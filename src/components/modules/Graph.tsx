@@ -401,12 +401,32 @@ export default Graph;
 
 // Bottom panel version that exposes controls via ref
 export const GraphBottom = forwardRef<GraphContentHandle, {}>((_props, ref) => {
+  const [isMaximized, setIsMaximized] = useState(false);
+
   return (
-    <div className="h-full">
-      <ReactFlowProvider>
-        <GraphContent ref={ref} isBottomPanel={true} />
-      </ReactFlowProvider>
-    </div>
+    <>
+      <div className="h-full">
+        <ReactFlowProvider>
+          <GraphContent ref={ref} isBottomPanel={true} onBackgroundClick={() => setIsMaximized(true)} />
+        </ReactFlowProvider>
+      </div>
+
+      {isMaximized && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50"
+          onClick={() => setIsMaximized(false)}
+        >
+          <div
+            className="w-[90%] h-[90%] bg-sky-light rounded-xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ReactFlowProvider>
+              <GraphContent isMaximized={true} onClose={() => setIsMaximized(false)} />
+            </ReactFlowProvider>
+          </div>
+        </div>
+      )}
+    </>
   );
 });
 
