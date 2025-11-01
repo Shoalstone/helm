@@ -438,7 +438,7 @@ const Settings: React.FC = () => {
                 </label>
                 <p className="text-xs text-gray-500 mt-1 ml-5">
                   When enabled, model name is interpreted as a fine-tuned model. Enter either a custom name
-                  from the Tuning panel or the full official model name.
+                  from the Training panel or the full official model name.
                 </p>
                 {settings.assistant.useFinetuned && tuning.fineTunes.length > 0 && (
                   <select

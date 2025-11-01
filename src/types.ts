@@ -122,7 +122,7 @@ export type PanelModule =
   | 'Copilot'
   | 'Actions'
   | 'Settings'
-  | 'Tuning'
+  | 'Training'
   | null;
 
 export interface PanelConfig {

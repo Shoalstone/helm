@@ -7,14 +7,14 @@ import Tree from './modules/Tree';
 import Graph from './modules/Graph';
 import Actions from './modules/Actions';
 import Settings from './modules/Settings';
-import Tuning from './modules/Tuning';
+import Training from './modules/Training';
 
 const LeftPanel: React.FC = () => {
   const { leftPanel, updatePanels } = useStore();
   const [splitRatio, setSplitRatio] = useState(50); // percentage for top panel
   const [panelWidth, setPanelWidth] = useState(320); // width in pixels, not persisted
 
-  const modules: PanelModule[] = ['Tree', 'Graph', 'Agents', 'Copilot', 'Actions', 'Settings', 'Tuning', null];
+  const modules: PanelModule[] = ['Tree', 'Graph', 'Agents', 'Copilot', 'Actions', 'Training', 'Settings', null];
 
   const renderModule = (module: PanelModule) => {
     switch (module) {
@@ -30,8 +30,8 @@ const LeftPanel: React.FC = () => {
         return <Actions />;
       case 'Settings':
         return <Settings />;
-      case 'Tuning':
-        return <Tuning />;
+      case 'Training':
+        return <Training />;
       default:
         return null;
     }
