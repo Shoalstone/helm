@@ -467,6 +467,28 @@ const Settings: React.FC = () => {
                   </select>
                 )}
               </div>
+
+              <div>
+                <label className="flex items-center text-xs font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={settings.assistant.useFineTuningPrompts ?? false}
+                    onChange={(e) =>
+                      updateSettings({
+                        assistant: {
+                          ...settings.assistant,
+                          useFineTuningPrompts: e.target.checked,
+                        },
+                      })
+                    }
+                    className="mr-2"
+                  />
+                  Use Fine-Tuning Prompts
+                </label>
+                <p className="text-xs text-gray-500 mt-1 ml-5">
+                  When enabled, the prompts used in fine-tuning will override instructions for all agents, potentially improving performance.
+                </p>
+              </div>
             </div>
           )}
         </div>

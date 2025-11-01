@@ -72,6 +72,7 @@ export interface Settings {
   assistant: ModelSettings & {
     savedModels?: string[];
     useFinetuned?: boolean; // Toggle to use fine-tuned model
+    useFineTuningPrompts?: boolean; // Toggle to use fine-tuning prompts for all agents
   };
 }
 

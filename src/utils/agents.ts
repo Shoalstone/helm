@@ -155,10 +155,22 @@ export async function scoutDecision(
     const context = getContextNodes(tree, nodeId, config.vision);
     const contextText = context.map((text, i) => `Node ${i + 1}:\n${text}`).join('\n\n');
 
-    const userMessage = prompts.scout.userTemplate
-      .replace('{instructions}', config.instructions)
-      .replace('{context}', contextText || 'No previous context.')
-      .replace('{currentNode}', node.text || '<empty>');
+    // Use fine-tuning prompts if enabled, otherwise use regular prompts
+    let systemMessage: string;
+    let userMessage: string;
+
+    if (settings.assistant.useFineTuningPrompts) {
+      // Fine-tuning prompts (without instructions)
+      systemMessage = 'You are choosing whether to expand or cull text continuations.';
+      userMessage = `Choose whether to expand or cull this continuation.\n\nPrevious context:\n${contextText || 'No previous context.'}\n\nCurrent node:\n${node.text || '<empty>'}\n\nPlease end your response with either <decision>expand</decision> or <decision>cull</decision>.`;
+    } else {
+      // Regular prompts (with instructions)
+      systemMessage = prompts.scout.system;
+      userMessage = prompts.scout.userTemplate
+        .replace('{instructions}', config.instructions)
+        .replace('{context}', contextText || 'No previous context.')
+        .replace('{currentNode}', node.text || '<empty>');
+    }
 
     // Get OpenAI API key from store if using fine-tuned model
     const openaiApiKey = settings.assistant.useFinetuned
@@ -167,7 +179,7 @@ export async function scoutDecision(
 
     const response = await callAssistantModel(
       apiKey,
-      prompts.scout.system,
+      systemMessage,
       userMessage,
       settings.assistant,
       openaiApiKey
@@ -220,10 +232,22 @@ async function witnessDecision(
       })
       .join('\n\n');
 
-    const userMessage = prompts.witness.userTemplate
-      .replace('{instructions}', config.instructions)
-      .replace('{parentBranch}', parentContext)
-      .replace('{choices}', choicesText || 'No sibling continuations.');
+    // Use fine-tuning prompts if enabled, otherwise use regular prompts
+    let systemMessage: string;
+    let userMessage: string;
+
+    if (settings.assistant.useFineTuningPrompts) {
+      // Fine-tuning prompts (without instructions)
+      systemMessage = 'You are choosing the best text continuation.';
+      userMessage = `Choose the best continuation.\n\nPrevious context:\n${parentContext}\n\nContinuations:\n${choicesText || 'No sibling continuations.'}\n\nPlease end your response with <choice>X</choice> where X is the number of the best continuation.`;
+    } else {
+      // Regular prompts (with instructions)
+      systemMessage = prompts.witness.system;
+      userMessage = prompts.witness.userTemplate
+        .replace('{instructions}', config.instructions)
+        .replace('{parentBranch}', parentContext)
+        .replace('{choices}', choicesText || 'No sibling continuations.');
+    }
 
     // Get OpenAI API key from store if using fine-tuned model
     const openaiApiKey = settings.assistant.useFinetuned
@@ -232,7 +256,7 @@ async function witnessDecision(
 
     const response = await callAssistantModel(
       apiKey,
-      prompts.witness.system,
+      systemMessage,
       userMessage,
       settings.assistant,
       openaiApiKey
@@ -279,10 +303,22 @@ export async function copilotDecision(
     const context = getContextNodes(tree, nodeId, config.vision);
     const contextText = context.map((text, i) => `Node ${i + 1}:\n${text}`).join('\n\n');
 
-    const userMessage = prompts.copilot.userTemplate
-      .replace('{instructions}', config.instructions)
-      .replace('{context}', contextText || 'No previous context.')
-      .replace('{currentNode}', node.text || '<empty>');
+    // Use fine-tuning prompts if enabled, otherwise use regular prompts
+    let systemMessage: string;
+    let userMessage: string;
+
+    if (settings.assistant.useFineTuningPrompts) {
+      // Fine-tuning prompts (without instructions)
+      systemMessage = 'You are choosing whether to expand or cull text continuations.';
+      userMessage = `Choose whether to expand or cull this continuation.\n\nPrevious context:\n${contextText || 'No previous context.'}\n\nCurrent node:\n${node.text || '<empty>'}\n\nPlease end your response with either <decision>expand</decision> or <decision>cull</decision>.`;
+    } else {
+      // Regular prompts (with instructions)
+      systemMessage = prompts.copilot.system;
+      userMessage = prompts.copilot.userTemplate
+        .replace('{instructions}', config.instructions)
+        .replace('{context}', contextText || 'No previous context.')
+        .replace('{currentNode}', node.text || '<empty>');
+    }
 
     // Get OpenAI API key from store if using fine-tuned model
     const openaiApiKey = settings.assistant.useFinetuned
@@ -291,7 +327,7 @@ export async function copilotDecision(
 
     const response = await callAssistantModel(
       apiKey,
-      prompts.copilot.system,
+      systemMessage,
       userMessage,
       settings.assistant,
       openaiApiKey
@@ -618,6 +654,33 @@ export async function runWitness(
   shouldStop: () => boolean,
   onOutput?: (output: string) => void
 ): Promise<void> {
+  // Check if any node in the subtree is locked by another agent or missing
+  const checkSubtreeForLocks = (nodeId: string): { hasLocks: boolean; lockReason?: string } => {
+    const node = tree.nodes.get(nodeId);
+    if (!node) {
+      return { hasLocks: true, lockReason: 'missing node' };
+    }
+    if (node.locked && node.lockReason !== 'witness-active') {
+      return { hasLocks: true, lockReason: node.lockReason };
+    }
+    // Recursively check all children
+    for (const childId of node.childIds) {
+      const childResult = checkSubtreeForLocks(childId);
+      if (childResult.hasLocks) {
+        return childResult;
+      }
+    }
+    return { hasLocks: false };
+  };
+
+  const lockCheck = checkSubtreeForLocks(startNodeId);
+  if (lockCheck.hasLocks) {
+    if (onOutput) {
+      onOutput(`Witness stopped: subtree contains ${lockCheck.lockReason}`);
+    }
+    return;
+  }
+
   const lockedNodes = new Set<string>();
 
   const safeLock = (id: string) => {
