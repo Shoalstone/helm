@@ -120,7 +120,7 @@ const Training: React.FC = () => {
         return;
       }
 
-      const { fileId, status } = await uploadTrainingFile(tuning.openaiApiKey, dataToUpload);
+      const { fileId, status } = await uploadTrainingFile(tuning.openaiApiKey, dataToUpload, tuning.shuffleDecisions);
 
       updateTuning({ uploadedFileId: fileId, uploadStatus: status });
       addTuningOutput(`Upload successful! File ID: ${fileId}, Status: ${status}`);
@@ -675,6 +675,21 @@ const Training: React.FC = () => {
                 {tuning.uploadedFileId && (
                   <p className="text-xs text-gray-600 mt-1 truncate">File ID: {tuning.uploadedFileId}</p>
                 )}
+
+                <div className="mt-3">
+                  <label className="flex items-center text-xs font-medium text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={tuning.shuffleDecisions}
+                      onChange={(e) => updateTuning({ shuffleDecisions: e.target.checked })}
+                      className="mr-2"
+                    />
+                    Shuffle Decisions
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Prevents the model from focusing on the order you made the decisions.
+                  </p>
+                </div>
               </div>
 
               {/* Fine-Tuning Job Controls */}

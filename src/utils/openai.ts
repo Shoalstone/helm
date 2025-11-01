@@ -1,11 +1,24 @@
 import OpenAI from 'openai';
 import type { TrainingDataEntry, FineTuneModel } from '../types';
 
-export async function uploadTrainingFile(apiKey: string, data: TrainingDataEntry[]): Promise<{ fileId: string; status: string }> {
+// Fisher-Yates shuffle algorithm to randomize array order
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array]; // Create a copy to avoid mutating original
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+export async function uploadTrainingFile(apiKey: string, data: TrainingDataEntry[], shuffle = true): Promise<{ fileId: string; status: string }> {
   const client = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
 
+  // Randomize the order to prevent the model from learning sequential patterns (if enabled)
+  const processedData = shuffle ? shuffleArray(data) : data;
+
   // Convert training data to JSONL format
-  const jsonlLines = data.map(entry => {
+  const jsonlLines = processedData.map(entry => {
     if (entry.type === 'choice') {
       // Format choice entries (sibling preference)
       const continuationsText = entry.continuations

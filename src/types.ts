@@ -113,6 +113,7 @@ export interface TuningConfig {
   epochs: number; // Number of training epochs
   batchSize: number; // Batch size for training
   learningRate: number | 'auto'; // Learning rate multiplier or 'auto'
+  shuffleDecisions: boolean; // Randomize decision order before upload to prevent sequential pattern learning
 }
 
 export type PanelModule =

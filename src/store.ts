@@ -331,6 +331,7 @@ const DEFAULT_TUNING: TuningConfig = {
   epochs: 1,
   batchSize: 4,
   learningRate: 'auto',
+  shuffleDecisions: true,
 };
 
 const loadTuning = (): TuningConfig => {
