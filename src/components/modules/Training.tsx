@@ -20,6 +20,7 @@ const Training: React.FC = () => {
   const [confirmingCancelJob, setConfirmingCancelJob] = useState(false);
   const [statusResult, setStatusResult] = useState<string>('');
   const [fineTuningExpanded, setFineTuningExpanded] = useState(false);
+  const [learningRateInput, setLearningRateInput] = useState<string>(String(tuning.learningRate));
   const clearDataTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const cancelJobTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -31,6 +32,11 @@ const Training: React.FC = () => {
       statusOutputRef.current.scrollTop = statusOutputRef.current.scrollHeight;
     }
   }, [tuning.outputs]);
+
+  // Sync local learning rate input with store value
+  useEffect(() => {
+    setLearningRateInput(String(tuning.learningRate));
+  }, [tuning.learningRate]);
 
   const handleExportDecisions = async () => {
     try {
@@ -549,16 +555,27 @@ const Training: React.FC = () => {
                   <label className="block text-xs font-medium text-gray-700 mb-1">Learning Rate</label>
                   <input
                     type="text"
-                    value={tuning.learningRate}
+                    value={learningRateInput}
                     onChange={(e) => {
-                      const val = e.target.value;
+                      setLearningRateInput(e.target.value);
+                    }}
+                    onBlur={() => {
+                      const val = learningRateInput.trim();
                       if (val === 'auto') {
                         updateTuning({ learningRate: 'auto' });
                       } else {
                         const num = parseFloat(val);
-                        if (!isNaN(num)) {
+                        if (!isNaN(num) && num >= 0) {
                           updateTuning({ learningRate: num });
+                        } else {
+                          // Revert to store value if invalid
+                          setLearningRateInput(String(tuning.learningRate));
                         }
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.currentTarget.blur();
                       }
                     }}
                     className="w-full px-2 py-1 text-xs rounded border border-sky-medium focus:outline-none focus:ring-2 focus:ring-sky-dark"
