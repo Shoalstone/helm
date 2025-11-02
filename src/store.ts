@@ -1571,6 +1571,12 @@ export const useStore = create<AppState>((set, get) => {
 
   addTerminalMessage: (type: 'error' | 'debug' | 'info' | 'command', message: string) => {
     const state = get();
+
+    // Only accumulate messages when Terminal is open to prevent RAM issues
+    if (state.ribbonWindow !== 'Terminal') {
+      return;
+    }
+
     // Skip debug messages when verbose mode is off
     if (type === 'debug' && !state.terminalVerbose) {
       return;

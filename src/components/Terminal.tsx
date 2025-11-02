@@ -7,16 +7,27 @@ const Terminal: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [initialized, setInitialized] = useState(false);
   const shouldAutoScrollRef = useRef(true);
+  const hasInitialized = useRef(false);
 
-  // Add welcome message on first load
+  // Add welcome message on first load (only once per Terminal session)
   useEffect(() => {
-    if (!initialized && terminalMessages.length === 0) {
-      addTerminalMessage('info', 'Terminal initialized. Type /help for available commands.');
-      setInitialized(true);
+    // Only initialize once per component lifecycle
+    if (hasInitialized.current) {
+      return;
     }
-  }, [initialized, terminalMessages.length, addTerminalMessage]);
+
+    // Check if initialization message already exists to prevent duplicates
+    const hasInitMessage = terminalMessages.some(
+      msg => msg.message.includes('Terminal initialized')
+    );
+
+    if (!hasInitMessage && terminalMessages.length === 0) {
+      addTerminalMessage('info', 'Terminal initialized. Type /help for available commands.');
+    }
+
+    hasInitialized.current = true;
+  }, [terminalMessages, addTerminalMessage]);
 
   // Track scroll position to determine if we should auto-scroll
   useEffect(() => {
