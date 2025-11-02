@@ -151,11 +151,20 @@ const BottomPanel: React.FC<BottomPanelProps> = ({ graphRef }) => {
               <p>Use the <strong>Tree</strong> or <strong>Graph</strong> modules to see your tree structure visually.</p>
             </div>
             <div>
+              <p className="font-semibold">Training</p>
+              <p>The <strong>Training</strong> module captures your expand/cull decisions and sibling preferences, then fine-tunes OpenAI models to evaluate continuations the way you do.</p>
+            </div>
+            <div>
+              <p className="font-semibold">Terminal</p>
+              <p>The <strong>Terminal</strong> module displays logs and debug messages. Use <kbd className="px-1 py-0.5 bg-gray-200 rounded text-xs">/verbose</kbd> to enable detailed logging.</p>
+            </div>
+            <div>
               <p className="font-semibold">Actions</p>
               <p>The <strong>Actions</strong> module includes:</p>
               <ul className="list-disc ml-6 space-y-1 mt-1">
                 <li><strong>Generate Prompt:</strong> Creates initial text for your tree's root node based on instructions.</li>
                 <li><strong>Cull and Merge to Bookmarks:</strong> Removes all nodes not on a direct path to bookmarked nodes and performs mass merge, streamlining your tree to focus only on bookmarked branches.</li>
+                <li><strong>Automatic Bookmark:</strong> Uses the assistant to evaluate every node against your criteria, bookmarking nodes that match.</li>
               </ul>
             </div>
             <div>
