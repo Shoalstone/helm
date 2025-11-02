@@ -178,7 +178,14 @@ const persistCopilot = (copilot: CopilotConfig) => {
   }
 };
 
-export type RibbonWindow = 'None' | 'Help' | 'Graph';
+export type RibbonWindow = 'None' | 'Help' | 'Graph' | 'Terminal';
+
+export interface TerminalMessage {
+  id: string;
+  type: 'error' | 'debug' | 'info' | 'command';
+  message: string;
+  timestamp: Date;
+}
 
 interface UIState {
   bottomPanelHeight: number;
@@ -379,6 +386,10 @@ interface AppState {
   bottomPanelHeight: number; // Height as percentage of available space below ribbon
   ribbonWindow: RibbonWindow; // Which window is displayed below the ribbon
 
+  // Terminal state
+  terminalMessages: TerminalMessage[];
+  terminalVerbose: boolean;
+
   // Agent state
   scouts: ScoutConfig[];
   copilot: CopilotConfig;
@@ -441,6 +452,11 @@ interface AppState {
   addTuningOutput: (output: string) => void;
   captureDecision: (decision: 'expand' | 'cull', nodeId?: string) => void;
   markNodeExpanded: (nodeId: string) => void;
+
+  // Terminal actions
+  addTerminalMessage: (type: 'error' | 'debug' | 'info' | 'command', message: string) => void;
+  clearTerminal: () => void;
+  toggleTerminalVerbose: () => void;
 }
 
 export const useStore = create<AppState>((set, get) => {
@@ -521,6 +537,9 @@ export const useStore = create<AppState>((set, get) => {
 
     bottomPanelHeight: uiState.bottomPanelHeight,
     ribbonWindow: uiState.ribbonWindow,
+
+    terminalMessages: [],
+    terminalVerbose: false,
 
     scouts: loadScouts(),
 
@@ -1526,6 +1545,32 @@ export const useStore = create<AppState>((set, get) => {
 
     set({ currentTree: { ...tree, nodes: new Map(tree.nodes) } });
     flushTreeSave();
+  },
+
+  addTerminalMessage: (type: 'error' | 'debug' | 'info' | 'command', message: string) => {
+    const state = get();
+    // Skip debug messages when verbose mode is off
+    if (type === 'debug' && !state.terminalVerbose) {
+      return;
+    }
+
+    const messages = state.terminalMessages;
+    const newMessage: TerminalMessage = {
+      id: `msg_${crypto.randomUUID()}`,
+      type,
+      message,
+      timestamp: new Date(),
+    };
+    set({ terminalMessages: [...messages, newMessage] });
+  },
+
+  clearTerminal: () => {
+    set({ terminalMessages: [] });
+  },
+
+  toggleTerminalVerbose: () => {
+    const currentVerbose = get().terminalVerbose;
+    set({ terminalVerbose: !currentVerbose });
   },
   };
 });

@@ -3,6 +3,7 @@ import Header from './components/Header';
 import LeftPanel from './components/LeftPanel';
 import RightPanel from './components/RightPanel';
 import BottomPanel from './components/BottomPanel';
+import Terminal from './components/Terminal';
 import StatusRibbon from './components/StatusRibbon';
 import TextEditor, { TextEditorHandle } from './components/TextEditor';
 import { useStore } from './store';
@@ -79,6 +80,7 @@ function App() {
             <div style={{ height: `${bottomPanelHeight}%` }} className="overflow-hidden border-t border-sky-medium">
               {ribbonWindow === 'Help' && <BottomPanel />}
               {ribbonWindow === 'Graph' && <BottomPanel graphRef={graphBottomRef} />}
+              {ribbonWindow === 'Terminal' && <Terminal />}
               {ribbonWindow === 'None' && <div className="w-full h-full bg-sky-light" />}
             </div>
           )}

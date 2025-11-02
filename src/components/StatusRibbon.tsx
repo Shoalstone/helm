@@ -39,7 +39,7 @@ interface StatusRibbonProps {
   graphBottomRef: React.RefObject<GraphContentHandle>;
 }
 
-const RIBBON_WINDOWS: RibbonWindow[] = ['None', 'Help', 'Graph'];
+const RIBBON_WINDOWS: RibbonWindow[] = ['None', 'Help', 'Graph', 'Terminal'];
 
 const StatusRibbon: React.FC<StatusRibbonProps> = ({
   fontFamily,
