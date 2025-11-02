@@ -14,7 +14,7 @@ const BottomPanel: React.FC<BottomPanelProps> = ({ graphRef }) => {
   // Otherwise render the help content
   return (
     <div className="w-full h-full bg-sky-light overflow-y-auto overflow-x-hidden">
-      <div className="p-6 pb-8 max-w-4xl">
+      <div className="p-6 pb-8 max-w-4xl mx-auto">
         <h1 className="text-2xl font-bold text-gray-800 mb-4">Getting Started with Helm</h1>
 
         <div className="bg-white p-4 rounded-lg mb-6">

@@ -63,6 +63,7 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
     expanding: 'Generating new continuations',
     'scout-active': 'Scout running',
     'witness-active': 'Witness deciding',
+    'trident-active': 'Trident running',
     'copilot-deciding': 'Copilot deciding',
   };
   const lockReasonLabel = lockReason ? lockReasonLabels[lockReason] || lockReason : '';

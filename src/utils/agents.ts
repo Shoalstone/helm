@@ -477,8 +477,10 @@ export async function runTrident(
   const prongs = config.prongs || 2;
   const tries = config.tries || 3;
 
-  // Process a single prong - attempts to extend depth times with retries
-  const processProng = async (nodeId: string, depth: number): Promise<void> => {
+  // Extend a prong by finding children with retries
+  // Assumes the input node has already been evaluated and approved
+  // depth parameter indicates the depth of nodeId in the tree
+  const extendProng = async (nodeId: string, depth: number): Promise<void> => {
     if (shouldStop() || depth > config.depth) return;
 
     const acquired = lockNode(nodeId, 'trident-active');
@@ -487,30 +489,6 @@ export async function runTrident(
     }
 
     try {
-      // Get fresh tree reference
-      const currentTree = getTree ? getTree() : tree;
-
-      // Evaluate current node
-      const result = await scoutDecision(currentTree, nodeId, config, apiKey, settings);
-
-      // Store the output if callback provided
-      if (onOutput && result.response) {
-        onOutput(result.response);
-      }
-
-      if (shouldStop()) return;
-
-      if (result.decision === 'cull') {
-        // Cull this node and stop this prong
-        try {
-          deleteNode(nodeId);
-        } catch (e) {
-          // Node might already be deleted
-        }
-        return;
-      }
-
-      // Decision is 'expand' - try to generate and expand a child
       // Attempt up to `tries` times to find an expandable child
       for (let attempt = 0; attempt < tries; attempt++) {
         if (shouldStop()) break;
@@ -564,7 +542,7 @@ export async function runTrident(
 
         if (childResult.decision === 'expand') {
           // Success! Continue with this child to next depth
-          await processProng(childId, depth + 1);
+          await extendProng(childId, depth + 1);
           return; // Exit after successful expansion
         } else {
           // Cull this attempt
@@ -592,7 +570,7 @@ export async function runTrident(
     }
   };
 
-  // Main Trident logic: generate initial prongs and process each
+  // Main Trident logic: generate initial prongs, evaluate each once, then extend survivors
   try {
     const acquired = lockNode(startNodeId, 'trident-active');
     if (!acquired) {
@@ -627,10 +605,61 @@ export async function runTrident(
         return;
       }
 
-      // Process all prongs in parallel
-      await Promise.all(
-        prongIds.map(prongId => processProng(prongId, 1))
-      );
+      // Evaluate each initial prong once (no retries for initial prongs)
+      const evaluatedProngs: Array<{ prongId: string; decision: 'expand' | 'cull' }> = [];
+
+      for (const prongId of prongIds) {
+        if (shouldStop()) {
+          // Clean up remaining prongs
+          prongIds.forEach((id) => {
+            try {
+              deleteNode(id);
+            } catch (e) {
+              // Ignore
+            }
+          });
+          return;
+        }
+
+        // Get fresh tree for each evaluation
+        const freshTree = getTree ? getTree() : tree;
+        const result = await scoutDecision(freshTree, prongId, config, apiKey, settings);
+
+        // Store the output if callback provided
+        if (onOutput && result.response) {
+          onOutput(result.response);
+        }
+
+        evaluatedProngs.push({ prongId, decision: result.decision });
+      }
+
+      if (shouldStop()) {
+        // Clean up all prongs
+        prongIds.forEach((prongId) => {
+          try {
+            deleteNode(prongId);
+          } catch (e) {
+            // Ignore
+          }
+        });
+        return;
+      }
+
+      // Delete culled prongs and extend approved prongs in parallel
+      const extensionPromises = evaluatedProngs.map(async ({ prongId, decision }) => {
+        if (decision === 'cull') {
+          try {
+            deleteNode(prongId);
+          } catch (e) {
+            // Node might already be deleted
+          }
+        } else {
+          // Extend this prong (prong is at depth 1)
+          await extendProng(prongId, 1);
+        }
+      });
+
+      await Promise.all(extensionPromises);
     } finally {
       if (acquired) {
         unlockNode(startNodeId);

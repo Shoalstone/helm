@@ -101,6 +101,7 @@ const Tree: React.FC = () => {
             {node.locked && <span>🔒</span>}
             {node.lockReason === 'scout-active' && <span>🔍</span>}
             {node.lockReason === 'witness-active' && <span>👁️</span>}
+            {node.lockReason === 'trident-active' && <span>🔱</span>}
             {node.lockReason === 'copilot-deciding' && <span>🧭</span>}
             <span>{truncatedText || '<empty>'}</span>
           </div>
