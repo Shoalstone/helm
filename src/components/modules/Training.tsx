@@ -9,6 +9,7 @@ import {
   exportTrainingData,
   importTrainingData,
 } from '../../utils/openai';
+import DecisionViewer from '../DecisionViewer';
 
 const Training: React.FC = () => {
   const { tuning, updateTuning, addTuningOutput } = useStore();
@@ -19,6 +20,7 @@ const Training: React.FC = () => {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [confirmingCancelJob, setConfirmingCancelJob] = useState(false);
   const [statusResult, setStatusResult] = useState<string>('');
+  const [decisionManagementExpanded, setDecisionManagementExpanded] = useState(false);
   const [fineTuningExpanded, setFineTuningExpanded] = useState(false);
   const [learningRateInput, setLearningRateInput] = useState<string>(String(tuning.learningRate));
   const clearDataTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -404,97 +406,115 @@ const Training: React.FC = () => {
           </div>
         </div>
 
-        {/* Capture Decisions Toggle */}
-        <div className="mb-4 p-3 bg-white rounded-lg">
-          <label className="flex items-center text-xs font-medium text-gray-700">
-            <input
-              type="checkbox"
-              checked={tuning.captureDecisions}
-              onChange={(e) => updateTuning({ captureDecisions: e.target.checked })}
-              className="mr-2"
-            />
-            Capture Decisions
-          </label>
-          <p className="text-xs text-gray-500 mt-1">
-            Captures when you expand or cull a node that you haven't yet expanded.
-          </p>
-          <p className="text-xs text-gray-600 mt-1">
-            Current data: {currentDataCount} entries
-          </p>
-
-          <div className="mt-3">
-            <label className="block text-xs font-medium text-gray-700 mb-1">Context Depth</label>
-            <input
-              type="number"
-              min="1"
-              max="20"
-              value={tuning.contextDepth}
-              onChange={(e) => updateTuning({ contextDepth: parseInt(e.target.value) || 1 })}
-              className="w-full px-2 py-1 text-xs rounded border border-sky-medium focus:outline-none focus:ring-2 focus:ring-sky-dark"
-            />
-            <p className="text-xs text-gray-500 mt-1">Number of parent nodes to include as context</p>
-          </div>
-
-          <div className="mt-3">
-            <label className="flex items-center text-xs font-medium text-gray-700">
-              <input
-                type="checkbox"
-                checked={tuning.captureSiblingPreference}
-                onChange={(e) => updateTuning({ captureSiblingPreference: e.target.checked })}
-                className="mr-2"
-              />
-              Capture Sibling Preference
-            </label>
-            <p className="text-xs text-gray-500 mt-1">
-              Captures when you expand a node when none of its siblings have been expanded; records it as the best continuation.
-            </p>
-          </div>
-        </div>
-
-        {/* Data Management Buttons */}
-        <div className="mb-4 space-y-2">
+        {/* Decisions Dropdown */}
+        <div className="mb-4">
           <button
-            onClick={handleExportDecisions}
-            className="w-full px-3 py-2 text-xs rounded bg-sky-medium hover:bg-sky-dark text-gray-800 transition-colors shadow-sm"
+            onClick={() => setDecisionManagementExpanded(!decisionManagementExpanded)}
+            className="w-full flex items-center justify-between px-3 py-2 bg-sky-medium rounded-lg hover:bg-sky-dark transition-colors"
           >
-            Export Decisions
+            <span className="text-sm font-medium text-gray-800">Decisions</span>
+            <span className="text-gray-600">{decisionManagementExpanded ? '▼' : '▶'}</span>
           </button>
-          <p className="text-xs text-gray-500 px-1">Exports decision data to an external file.</p>
 
-          <button
-            onClick={handleSetDecisionSource}
-            className="w-full px-3 py-2 text-xs rounded bg-sky-medium hover:bg-sky-dark text-gray-800 transition-colors shadow-sm"
-          >
-            Set Decision Source
-          </button>
-          <p className="text-xs text-gray-500 px-1">Sets the source of decision data to an external file.</p>
-          {tuning.externalDataSource && (
-            <p className="text-xs text-gray-600 px-1 truncate">Current: {tuning.externalDataSource}</p>
+          {decisionManagementExpanded && (
+            <div className="mt-2 p-3 bg-white rounded-lg border border-sky-medium">
+              {/* Capture Decisions Toggle */}
+              <div className="mb-4">
+                <label className="flex items-center text-xs font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={tuning.captureDecisions}
+                    onChange={(e) => updateTuning({ captureDecisions: e.target.checked })}
+                    className="mr-2"
+                  />
+                  Capture Decisions
+                </label>
+                <p className="text-xs text-gray-500 mt-1">
+                  Captures when you expand or cull a node that you haven't yet expanded.
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  Current data: {currentDataCount} entries
+                </p>
+
+                <div className="mt-3">
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Context Depth</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={tuning.contextDepth}
+                    onChange={(e) => updateTuning({ contextDepth: parseInt(e.target.value) || 1 })}
+                    className="w-full px-2 py-1 text-xs rounded border border-sky-medium focus:outline-none focus:ring-2 focus:ring-sky-dark"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Number of parent nodes to include as context</p>
+                </div>
+
+                <div className="mt-3">
+                  <label className="flex items-center text-xs font-medium text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={tuning.captureSiblingPreference}
+                      onChange={(e) => updateTuning({ captureSiblingPreference: e.target.checked })}
+                      className="mr-2"
+                    />
+                    Capture Sibling Preference
+                  </label>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Captures when you expand a node when none of its siblings have been expanded; records it as the best continuation.
+                  </p>
+                </div>
+              </div>
+
+              {/* Decision Viewer */}
+              <DecisionViewer />
+
+              {/* Data Management Buttons */}
+              <div className="mb-0 space-y-2">
+                <button
+                  onClick={handleExportDecisions}
+                  className="w-full px-3 py-2 text-xs rounded bg-sky-medium hover:bg-sky-dark text-gray-800 transition-colors shadow-sm"
+                >
+                  Export Decisions
+                </button>
+                <p className="text-xs text-gray-500 px-1">Exports decision data to an external file.</p>
+
+                <button
+                  onClick={handleSetDecisionSource}
+                  className="w-full px-3 py-2 text-xs rounded bg-sky-medium hover:bg-sky-dark text-gray-800 transition-colors shadow-sm"
+                >
+                  Set Decision Source
+                </button>
+                <p className="text-xs text-gray-500 px-1">Sets the source of decision data to an external file.</p>
+                {tuning.externalDataSource && (
+                  <p className="text-xs text-gray-600 px-1 truncate">Current: {tuning.externalDataSource}</p>
+                )}
+
+                <button
+                  onClick={handleRevertDecisionSource}
+                  disabled={!tuning.externalDataSource}
+                  className="w-full px-3 py-2 text-xs rounded bg-sky-medium hover:bg-sky-dark text-gray-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Revert Decision Source
+                </button>
+                <p className="text-xs text-gray-500 px-1">
+                  Sets the source of decision data to the local store instead of an external file.
+                </p>
+
+                <button
+                  onClick={handleClearDecisionData}
+                  disabled={tuning.trainingData.length === 0}
+                  className={`w-full px-3 py-2 text-xs rounded transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
+                    confirmingClearData
+                      ? 'bg-sky-medium hover:bg-sky-dark text-gray-800'
+                      : 'bg-sky-accent hover:bg-sky-light text-gray-800'
+                  }`}
+                >
+                  {confirmingClearData ? 'Are you sure?' : 'Clear Decision Data'}
+                </button>
+                <p className="text-xs text-gray-500 px-1">Clears all locally stored decision data.</p>
+              </div>
+            </div>
           )}
-
-          <button
-            onClick={handleRevertDecisionSource}
-            disabled={!tuning.externalDataSource}
-            className="w-full px-3 py-2 text-xs rounded bg-sky-medium hover:bg-sky-dark text-gray-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Revert Decision Source
-          </button>
-          <p className="text-xs text-gray-500 px-1">
-            Sets the source of decision data to the local store instead of an external file.
-          </p>
-
-          <button
-            onClick={handleClearDecisionData}
-            disabled={tuning.trainingData.length === 0}
-            className={`w-full px-3 py-2 text-xs rounded transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
-              confirmingClearData
-                ? 'bg-sky-medium hover:bg-sky-dark text-gray-800'
-                : 'bg-sky-accent hover:bg-sky-light text-gray-800'
-            }`}
-          >
-            {confirmingClearData ? 'Are you sure?' : 'Clear Decision Data'}
-          </button>
-          <p className="text-xs text-gray-500 px-1">Clears all locally stored decision data.</p>
         </div>
 
         {/* Fine-Tuning Dropdown */}

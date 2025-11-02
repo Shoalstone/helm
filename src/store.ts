@@ -452,6 +452,7 @@ interface AppState {
   addTuningOutput: (output: string) => void;
   captureDecision: (decision: 'expand' | 'cull', nodeId?: string) => void;
   markNodeExpanded: (nodeId: string) => void;
+  deleteDecision: (index: number) => void;
 
   // Terminal actions
   addTerminalMessage: (type: 'error' | 'debug' | 'info' | 'command', message: string) => void;
@@ -1545,6 +1546,27 @@ export const useStore = create<AppState>((set, get) => {
 
     set({ currentTree: { ...tree, nodes: new Map(tree.nodes) } });
     flushTreeSave();
+  },
+
+  deleteDecision: (index: number) => {
+    const tuning = get().tuning;
+    if (index < 0 || index >= tuning.trainingData.length) {
+      return;
+    }
+
+    const updatedTrainingData = [
+      ...tuning.trainingData.slice(0, index),
+      ...tuning.trainingData.slice(index + 1)
+    ];
+
+    const updated = {
+      ...tuning,
+      trainingData: updatedTrainingData,
+      outputs: [...tuning.outputs, `Deleted decision ${index + 1}`],
+    };
+
+    set({ tuning: updated });
+    persistTuning(updated);
   },
 
   addTerminalMessage: (type: 'error' | 'debug' | 'info' | 'command', message: string) => {
