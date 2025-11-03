@@ -2,6 +2,8 @@
 
 A variant of Janus' [Loom](https://github.com/socketteer/loom) and cosmicoptima's [Obsidian implementation](https://github.com/cosmicoptima/loom) with an emphasis on autonomous exploration and complex tree management.
 
+Join the Discord server: http://discord.gg/qM5qzCDHvK
+
 ## Getting Started
 
 A Help text will appear when you first open the application. For quick start, use the dropdowns above the side panels to open the Settings window, and insert an OpenRouter API key with some credits attached. Click the question mark on the bottom right of the text editor for keybinds.
