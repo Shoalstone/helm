@@ -1589,7 +1589,15 @@ export const useStore = create<AppState>((set, get) => {
       message,
       timestamp: new Date(),
     };
-    set({ terminalMessages: [...messages, newMessage] });
+
+    // Limit to 1000 messages - keep most recent
+    const MAX_TERMINAL_MESSAGES = 1000;
+    const updatedMessages = [...messages, newMessage];
+    const limitedMessages = updatedMessages.length > MAX_TERMINAL_MESSAGES
+      ? updatedMessages.slice(updatedMessages.length - MAX_TERMINAL_MESSAGES)
+      : updatedMessages;
+
+    set({ terminalMessages: limitedMessages });
   },
 
   clearTerminal: () => {
