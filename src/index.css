@@ -4,38 +4,38 @@
 
 /* Default theme - Sky (preserved original colors) */
 :root {
-  --color-sky-light: #E6F3FF;
-  --color-sky-medium: #B3D9FF;
-  --color-sky-dark: #80BFFF;
-  --color-sky-accent: #CCE5FF;
+  --color-sky-light: #EBF6FF;
+  --color-sky-medium: #C7E3FF;
+  --color-sky-dark: #99CCFF;
+  --color-sky-accent: #DCEEFF;
   --color-sky-divider: #D9EBFF;
 }
 
 /* Sea theme - Deep Ocean */
 :root[data-theme="nautical"] {
   --color-sky-light: #E8F4F8;
-  --color-sky-medium: #A8D5E2;
-  --color-sky-dark: #5A9FB8;
-  --color-sky-accent: #C5E3ED;
+  --color-sky-medium: #BDDFE9;
+  --color-sky-dark: #75B2C8;
+  --color-sky-accent: #D5ECF3;
   --color-sky-divider: #D6EBF2;
 }
 
 /* Sunset theme - Sunset Horizon */
 :root[data-theme="dusk"] {
-  --color-sky-light: #FFE9E0;
-  --color-sky-medium: #FFB899;
-  --color-sky-dark: #FF8A5C;
-  --color-sky-accent: #FFD4C2;
-  --color-sky-divider: #FFD9C8;
+  --color-sky-light: #FFF1EB;
+  --color-sky-medium: #FFCDB8;
+  --color-sky-dark: #FFA887;
+  --color-sky-accent: #FFE4D8;
+  --color-sky-divider: #FFE5D9;
 }
 
 /* Storm theme - Dark Waters */
 :root[data-theme="storm"] {
-  --color-sky-light: #D4D8DC;
-  --color-sky-medium: #99A3AE;
-  --color-sky-dark: #5C6B7D;
-  --color-sky-accent: #B8C1CA;
-  --color-sky-divider: #C4CACD;
+  --color-sky-light: #DFE2E6;
+  --color-sky-medium: #B3BFC9;
+  --color-sky-dark: #8494A5;
+  --color-sky-accent: #CBD5DD;
+  --color-sky-divider: #CDD3D7;
 }
 
 /* Sunrise theme - Morning Light */
@@ -49,29 +49,29 @@
 
 /* Forest theme - Medieval European Woodland */
 :root[data-theme="forest"] {
-  --color-sky-light: #D8E3DC;
-  --color-sky-medium: #8FAD96;
-  --color-sky-dark: #4D6C54;
-  --color-sky-accent: #C3D4CA;
-  --color-sky-divider: #CFE0D6;
+  --color-sky-light: #DFE6E3;
+  --color-sky-medium: #BCD4C6;
+  --color-sky-dark: #A5C2B3;
+  --color-sky-accent: #E3E9E5;
+  --color-sky-divider: #D5DFD8;
 }
 
 /* Arctic theme - Frozen Tundra */
 :root[data-theme="arctic"] {
-  --color-sky-light: #F0F8FF;
-  --color-sky-medium: #CFE4F5;
-  --color-sky-dark: #A0C8E8;
-  --color-sky-accent: #E3F0FA;
-  --color-sky-divider: #E8F3FC;
+  --color-sky-light: #F5FBFF;
+  --color-sky-medium: #DFEEFB;
+  --color-sky-dark: #B8D9F0;
+  --color-sky-accent: #EDF7FD;
+  --color-sky-divider: #F0F8FE;
 }
 
 /* Magic theme - Lilac */
 :root[data-theme="magic"] {
-  --color-sky-light: #F3E5F5;
-  --color-sky-medium: #E1BEE7;
-  --color-sky-dark: #CE93D8;
-  --color-sky-accent: #F0D9F5;
-  --color-sky-divider: #EDD5F2;
+  --color-sky-light: #F8F0FA;
+  --color-sky-medium: #EDD5F2;
+  --color-sky-dark: #DDB3E6;
+  --color-sky-accent: #F5E6F8;
+  --color-sky-divider: #F3E3F7;
 }
 
 * {
