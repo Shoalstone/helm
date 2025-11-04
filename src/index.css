@@ -53,7 +53,7 @@
   --color-sky-medium: #BCD4C6;
   --color-sky-dark: #A5C2B3;
   --color-sky-accent: #E3E9E5;
-  --color-sky-divider: #D5DFD8;
+  --color-sky-divider: #D2DCD6;
 }
 
 /* Arctic theme - Frozen Tundra */
@@ -62,7 +62,7 @@
   --color-sky-medium: #DFEEFB;
   --color-sky-dark: #B8D9F0;
   --color-sky-accent: #EDF7FD;
-  --color-sky-divider: #F0F8FE;
+  --color-sky-divider: #ECF6FE;
 }
 
 /* Magic theme - Lilac */
@@ -72,6 +72,80 @@
   --color-sky-dark: #DDB3E6;
   --color-sky-accent: #F5E6F8;
   --color-sky-divider: #F3E3F7;
+}
+
+/* High Contrast Versions */
+
+/* Default theme - Sky (High Contrast) */
+:root[data-contrast="high"] {
+  --color-sky-light: #EBF6FF;
+  --color-sky-medium: #A8D4FF;
+  --color-sky-dark: #5BA3FF;
+  --color-sky-accent: #C7E3FF;
+  --color-sky-divider: #D4EDFF;
+}
+
+/* Sea theme - Deep Ocean (High Contrast) */
+:root[data-theme="nautical"][data-contrast="high"] {
+  --color-sky-light: #E8F4F8;
+  --color-sky-medium: #9ACEE0;
+  --color-sky-dark: #4A9AB8;
+  --color-sky-accent: #B8DFEB;
+  --color-sky-divider: #D0E8F0;
+}
+
+/* Sunset theme - Sunset Horizon (High Contrast) */
+:root[data-theme="dusk"][data-contrast="high"] {
+  --color-sky-light: #FFF1EB;
+  --color-sky-medium: #FFB399;
+  --color-sky-dark: #FF7A4D;
+  --color-sky-accent: #FFD1BE;
+  --color-sky-divider: #FFE0D4;
+}
+
+/* Storm theme - Dark Waters (High Contrast) */
+:root[data-theme="storm"][data-contrast="high"] {
+  --color-sky-light: #DFE2E6;
+  --color-sky-medium: #99AABC;
+  --color-sky-dark: #5D728A;
+  --color-sky-accent: #B3BFCC;
+  --color-sky-divider: #CACFDA;
+}
+
+/* Sunrise theme - Morning Light (High Contrast) */
+:root[data-theme="dawn"][data-contrast="high"] {
+  --color-sky-light: #FFF0F0;
+  --color-sky-medium: #FFB3C2;
+  --color-sky-dark: #FF6685;
+  --color-sky-accent: #FFCCD9;
+  --color-sky-divider: #FFDDE4;
+}
+
+/* Forest theme - Medieval European Woodland (High Contrast) */
+:root[data-theme="forest"][data-contrast="high"] {
+  --color-sky-light: #DFE6E3;
+  --color-sky-medium: #A3C4B0;
+  --color-sky-dark: #7AAA91;
+  --color-sky-accent: #CADDD1;
+  --color-sky-divider: #CFD9D4;
+}
+
+/* Arctic theme - Frozen Tundra (High Contrast) */
+:root[data-theme="arctic"][data-contrast="high"] {
+  --color-sky-light: #F5FBFF;
+  --color-sky-medium: #CBEBFF;
+  --color-sky-dark: #8DC6EA;
+  --color-sky-accent: #DAEFFB;
+  --color-sky-divider: #E3F3FF;
+}
+
+/* Magic theme - Lilac (High Contrast) */
+:root[data-theme="magic"][data-contrast="high"] {
+  --color-sky-light: #F8F0FA;
+  --color-sky-medium: #DEBFEA;
+  --color-sky-dark: #C58FD8;
+  --color-sky-accent: #E8D6ED;
+  --color-sky-divider: #EFE3F3;
 }
 
 * {

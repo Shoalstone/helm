@@ -19,6 +19,9 @@ const Header: React.FC = () => {
   const [currentTheme, setCurrentTheme] = useState(() => {
     return localStorage.getItem('theme') || 'default';
   });
+  const [highContrast, setHighContrast] = useState(() => {
+    return localStorage.getItem('contrast') === 'high';
+  });
   const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { trees, currentTree, selectTree, createTree, renameTree, deleteTree, extractSubtree, loadTreeList } = useStore();
@@ -42,6 +45,18 @@ const Header: React.FC = () => {
     } else {
       document.documentElement.setAttribute('data-theme', themeId);
       localStorage.setItem('theme', themeId);
+    }
+  };
+
+  const handleContrastToggle = () => {
+    const newContrast = !highContrast;
+    setHighContrast(newContrast);
+    if (newContrast) {
+      document.documentElement.setAttribute('data-contrast', 'high');
+      localStorage.setItem('contrast', 'high');
+    } else {
+      document.documentElement.removeAttribute('data-contrast');
+      localStorage.setItem('contrast', 'low');
     }
   };
 
@@ -175,6 +190,13 @@ const Header: React.FC = () => {
     };
   }, []);
 
+  // Initialize contrast setting on mount
+  useEffect(() => {
+    if (highContrast) {
+      document.documentElement.setAttribute('data-contrast', 'high');
+    }
+  }, []);
+
   // Collapsed ribbon
   if (isCollapsed) {
     return (
@@ -294,6 +316,14 @@ const Header: React.FC = () => {
             </option>
           ))}
         </select>
+
+        <button
+          onClick={handleContrastToggle}
+          className="w-7 h-7 rounded bg-sky-accent text-gray-800 text-xs hover:bg-sky-light transition-colors shadow-sm flex items-center justify-center font-mono"
+          title={highContrast ? "Switch to low contrast" : "Switch to high contrast"}
+        >
+          {highContrast ? 'C' : 'c'}
+        </button>
 
         <button
           onClick={() => setIsCollapsed(true)}
