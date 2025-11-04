@@ -316,9 +316,9 @@ const Scout: React.FC = () => {
                     disabled={scout.active}
                   >
                     <option value="Scout">Scout</option>
+                    <option value="Trident">Trident</option>
                     <option value="Witness">Witness</option>
                     <option value="Campaign">Campaign</option>
-                    <option value="Trident">Trident</option>
                   </select>
                 </div>
 
@@ -598,7 +598,7 @@ const Scout: React.FC = () => {
 
                 {/* Only show these settings for non-Campaign types */}
                 {scout.type !== 'Campaign' && (
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className={`grid gap-2 ${scout.type === 'Trident' ? 'grid-cols-5' : 'grid-cols-4'}`}>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 mb-1">Vision</label>
                       <input
