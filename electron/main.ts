@@ -202,6 +202,9 @@ function createWindow() {
     },
   });
 
+  // Maximize window to full screen size
+  mainWindow.maximize();
+
   // Hide menu bar completely on Windows/Linux (macOS keeps the menu bar in the system)
   if (process.platform !== 'darwin') {
     mainWindow.setMenuBarVisibility(false);
