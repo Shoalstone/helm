@@ -13,6 +13,7 @@ export interface TextEditorHandle {
   showHelp: () => void;
   scrollToBottom: () => void;
   toggleGreyOutReadOnly: () => void;
+  getEditorInstance: () => editor.IStandaloneCodeEditor | null;
 }
 
 const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(({ fontFamily, fontSize }, ref) => {
@@ -53,6 +54,7 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(({ fontFamily, 
       }
     },
     toggleGreyOutReadOnly: () => setGreyOutReadOnly((prev) => !prev),
+    getEditorInstance: () => editorRef.current,
   }));
 
   useEffect(() => {

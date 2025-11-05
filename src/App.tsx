@@ -71,6 +71,7 @@ function App() {
                 setFontSize={setFontSize}
                 onShowHelp={() => textEditorRef.current?.showHelp()}
                 graphBottomRef={graphBottomRef}
+                textEditorRef={textEditorRef}
               />
             </div>
           </div>

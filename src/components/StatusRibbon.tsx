@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useStore, RibbonWindow } from '../store';
 import { GraphContentHandle } from './modules/Graph';
+import { getCurrentNodeStartPosition } from '../utils/fileSystem';
+import { TextEditorHandle } from './TextEditor';
 
 // Type definition for Local Font Access API
 interface FontData {
@@ -37,6 +39,7 @@ interface StatusRibbonProps {
   setFontSize: (size: number) => void;
   onShowHelp: () => void;
   graphBottomRef: React.RefObject<GraphContentHandle>;
+  textEditorRef: React.RefObject<TextEditorHandle>;
 }
 
 const RIBBON_WINDOWS: RibbonWindow[] = ['None', 'Help', 'Graph', 'Terminal'];
@@ -48,13 +51,32 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
   setFontSize,
   onShowHelp,
   graphBottomRef,
+  textEditorRef,
 }) => {
-  const { currentTree, ribbonWindow, setRibbonWindow } = useStore();
+  const {
+    currentTree,
+    ribbonWindow,
+    setRibbonWindow,
+    setCurrentNode,
+    addNode,
+    splitNodeAt,
+    deleteNode,
+    mergeWithParent,
+    massMerge,
+    toggleBookmark,
+    lockNode,
+    unlockNode,
+    settings,
+    captureDecision,
+    markNodeExpanded,
+  } = useStore();
   const [showFontDropdown, setShowFontDropdown] = useState(false);
   const [showSizeDropdown, setShowSizeDropdown] = useState(false);
   const [showWindowDropdown, setShowWindowDropdown] = useState(false);
   const [fontFamilies, setFontFamilies] = useState<{ name: string; value: string }[]>(FALLBACK_FONTS);
   const [isLoadingFonts, setIsLoadingFonts] = useState(true);
+  const [commandsExpanded, setCommandsExpanded] = useState(false);
+  const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform);
 
   const currentNode = currentTree?.nodes.get(currentTree.currentNodeId);
   const isLocked = currentNode?.locked || false;
@@ -119,9 +141,244 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
     };
   }, []);
 
+  // Command button handlers
+  const handleGenerate = async () => {
+    if (!currentTree) return;
+    const currentNode = currentTree.nodes.get(currentTree.currentNodeId);
+    if (!currentNode || currentNode.locked) return;
+
+    // Capture expand decision IMMEDIATELY, before async operations
+    if (currentNode.id !== currentTree.rootId) {
+      captureDecision('expand', currentNode.id);
+      markNodeExpanded(currentNode.id);
+    }
+
+    if (!settings.apiKey) {
+      alert('Please set your OpenRouter API key in Settings');
+      return;
+    }
+
+    try {
+      const { expandNode, runCopilotOnNode } = await import('../utils/agents');
+      const childIds = await expandNode(
+        currentTree,
+        currentNode.id,
+        settings.continuations.branchingFactor,
+        settings.apiKey,
+        settings,
+        (id) => lockNode(id, 'expanding'),
+        unlockNode,
+        addNode
+      );
+
+      const latestState = useStore.getState();
+
+      if (childIds.length > 0 && latestState.currentTree?.currentNodeId === currentNode.id) {
+        latestState.setCurrentNode(childIds[0]);
+      }
+
+      // Run copilot on newly created children if enabled
+      const currentCopilot = latestState.copilot;
+      if (currentCopilot.enabled && childIds.length > 0 && currentCopilot.instructions) {
+        const freshTree = useStore.getState().currentTree;
+        if (!freshTree) return;
+
+        const getTree = () => useStore.getState().currentTree!;
+
+        for (const childId of childIds) {
+          const store = useStore.getState();
+          if (!store.copilot.enabled) break;
+
+          try {
+            await runCopilotOnNode(
+              freshTree,
+              childId,
+              currentCopilot,
+              settings.apiKey,
+              settings,
+              (id) => store.lockNode(id, 'copilot-deciding'),
+              store.unlockNode,
+              store.addNode,
+              store.deleteNode,
+              () => !useStore.getState().copilot.enabled,
+              getTree,
+              (output) => store.addCopilotOutput(output)
+            );
+          } catch (error) {
+            console.error('Copilot error:', error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Expansion error:', error);
+      alert('Failed to expand node. Check console for details.');
+    }
+  };
+
+  const handleCull = () => {
+    if (!currentTree) return;
+    const currentNode = currentTree.nodes.get(currentTree.currentNodeId);
+    if (!currentNode || currentNode.id === currentTree.rootId || currentNode.locked) return;
+
+    if (currentNode.childIds.length > 0) {
+      setCurrentNode(currentNode.childIds[0]);
+    } else {
+      const parent = currentTree.nodes.get(currentNode.parentId!);
+      const parentIsLocked = parent && parent.locked &&
+        parent.lockReason !== 'witness-active' &&
+        parent.lockReason !== 'copilot-deciding' &&
+        parent.lockReason !== 'trident-active';
+
+      if (!parentIsLocked && parent) {
+        captureDecision('cull', currentNode.id);
+      }
+      deleteNode(currentNode.id);
+    }
+  };
+
+  const handleSplit = () => {
+    if (!currentTree) return;
+    const currentNode = currentTree.nodes.get(currentTree.currentNodeId);
+    if (!currentNode || currentNode.locked) return;
+
+    const editor = textEditorRef.current?.getEditorInstance?.();
+    if (!editor) {
+      const newChildId = addNode(currentNode.id, '');
+      if (newChildId) {
+        setCurrentNode(newChildId);
+      }
+      return;
+    }
+
+    const model = editor.getModel();
+    const position = editor.getPosition();
+    let handled = false;
+
+    if (model && position) {
+      const absoluteOffset = model.getOffsetAt(position);
+      const nodeStartOffset = getCurrentNodeStartPosition(currentTree, currentNode.id);
+      const relativeOffset = absoluteOffset - nodeStartOffset;
+
+      if (relativeOffset >= 0 && relativeOffset < currentNode.text.length) {
+        const splitResult = splitNodeAt(currentNode.id, relativeOffset, { requireUnlockedChildren: true });
+        if (splitResult) {
+          handled = true;
+        } else {
+          handled = true;
+        }
+      }
+    }
+
+    if (!handled) {
+      const newChildId = addNode(currentNode.id, '');
+      if (newChildId) {
+        setCurrentNode(newChildId);
+      }
+    }
+  };
+
+  const handleMerge = () => {
+    if (!currentTree) return;
+    const currentNode = currentTree.nodes.get(currentTree.currentNodeId);
+    if (!currentNode || currentNode.id === currentTree.rootId || currentNode.locked) return;
+
+    mergeWithParent(currentNode.id);
+  };
+
+  const handleMass = () => {
+    if (!currentTree) return;
+    massMerge();
+  };
+
+  const handleMark = () => {
+    if (!currentTree) return;
+    toggleBookmark(currentTree.currentNodeId);
+  };
+
+  const handleTrail = () => {
+    textEditorRef.current?.toggleGreyOutReadOnly();
+  };
+
   return (
-    <div className="h-8 bg-sky-medium flex items-center justify-between px-3 text-xs text-gray-800 relative">
+    <div className="h-8 bg-sky-medium flex items-center justify-between px-2 text-xs text-gray-800 relative">
       <div className="flex items-center gap-2">
+        {/* Command toggle button */}
+        <button
+          onClick={() => setCommandsExpanded(!commandsExpanded)}
+          className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors"
+          title="Toggle command buttons"
+        >
+          ⌘
+        </button>
+
+        {/* Command buttons (conditional) */}
+        {commandsExpanded && (
+          <>
+            <button
+              onClick={handleGenerate}
+              disabled={isLocked}
+              className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={`Generate continuations (${isMac ? 'Ctrl+Space' : 'Alt+Enter'})`}
+            >
+              Generate
+            </button>
+
+            <button
+              onClick={handleCull}
+              disabled={isLocked || !currentNode || currentNode.id === currentTree?.rootId}
+              className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Cull node (Alt+Backspace)"
+            >
+              Cull
+            </button>
+
+            <button
+              onClick={handleSplit}
+              disabled={isLocked}
+              className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={`Split at cursor or create new (${isMac ? 'Ctrl+N' : 'Alt+N'})`}
+            >
+              Split
+            </button>
+
+            <button
+              onClick={handleMerge}
+              disabled={isLocked || !currentNode || currentNode.id === currentTree?.rootId}
+              className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={`Merge with parent (${isMac ? 'Ctrl+M' : 'Alt+M'})`}
+            >
+              Merge
+            </button>
+
+            <button
+              onClick={handleMass}
+              disabled={!currentTree}
+              className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={`Mass merge single children (${isMac ? 'Ctrl+Shift+M' : 'Alt+Shift+M'})`}
+            >
+              Mass
+            </button>
+
+            <button
+              onClick={handleMark}
+              disabled={!currentTree}
+              className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={`Toggle bookmark (${isMac ? 'Ctrl+B' : 'Alt+B'})`}
+            >
+              Mark
+            </button>
+
+            <button
+              onClick={handleTrail}
+              className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors"
+              title={`Toggle grey read-only text (${isMac ? 'Ctrl+.' : 'Alt+.'})`}
+            >
+              Trail
+            </button>
+          </>
+        )}
+
+        {/* Status indicator */}
         {isLocked && (
           <span className="px-2 py-1 rounded bg-sky-dark text-white">
             🔒 Locked: {lockReasonLabel}
