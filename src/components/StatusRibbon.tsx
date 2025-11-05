@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useStore, RibbonWindow } from '../store';
 import { GraphContentHandle } from './modules/Graph';
 import { getCurrentNodeStartPosition } from '../utils/fileSystem';
@@ -76,6 +76,9 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
   const [fontFamilies, setFontFamilies] = useState<{ name: string; value: string }[]>(FALLBACK_FONTS);
   const [isLoadingFonts, setIsLoadingFonts] = useState(true);
   const [commandsExpanded, setCommandsExpanded] = useState(false);
+  const [showLeftGradient, setShowLeftGradient] = useState(false);
+  const [showRightGradient, setShowRightGradient] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform);
 
   const currentNode = currentTree?.nodes.get(currentTree.currentNodeId);
@@ -140,6 +143,29 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Update scroll gradient visibility
+  const updateScrollGradients = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = container;
+    const maxScroll = scrollWidth - clientWidth;
+
+    setShowLeftGradient(scrollLeft > 1); // Show left gradient if scrolled right
+    setShowRightGradient(scrollLeft < maxScroll - 1); // Show right gradient if not at end
+  };
+
+  // Check scroll state when buttons expand or content changes
+  useEffect(() => {
+    if (commandsExpanded) {
+      // Small delay to ensure content is rendered
+      setTimeout(updateScrollGradients, 0);
+    } else {
+      setShowLeftGradient(false);
+      setShowRightGradient(false);
+    }
+  }, [commandsExpanded]);
 
   // Command button handlers
   const handleGenerate = async () => {
@@ -301,7 +327,7 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
 
   return (
     <div className="h-8 bg-sky-medium flex items-center justify-between px-2 text-xs text-gray-800 relative">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 min-w-0 flex-1">
         {/* Command toggle button */}
         <button
           onClick={() => setCommandsExpanded(!commandsExpanded)}
@@ -311,83 +337,98 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
           ⌘
         </button>
 
-        {/* Command buttons (conditional) */}
+        {/* Command buttons with fade gradients when expanded */}
         {commandsExpanded && (
-          <>
-            <button
-              onClick={handleGenerate}
-              disabled={isLocked}
-              className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title={`Generate continuations (${isMac ? 'Ctrl+Space' : 'Alt+Enter'})`}
+          <div className="relative" style={{ width: '256px' }}>
+            <div
+              ref={scrollContainerRef}
+              onScroll={updateScrollGradients}
+              className="flex items-center gap-2 overflow-x-auto scrollbar-hide"
             >
-              Generate
-            </button>
+              <button
+                onClick={handleGenerate}
+                disabled={isLocked}
+                className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                title={`Generate continuations (${isMac ? 'Ctrl+Space' : 'Alt+Enter'})`}
+              >
+                Generate
+              </button>
 
-            <button
-              onClick={handleCull}
-              disabled={isLocked || !currentNode || currentNode.id === currentTree?.rootId}
-              className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Cull node (Alt+Backspace)"
-            >
-              Cull
-            </button>
+              <button
+                onClick={handleCull}
+                disabled={isLocked || !currentNode || currentNode.id === currentTree?.rootId}
+                className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                title="Cull node (Alt+Backspace)"
+              >
+                Cull
+              </button>
 
-            <button
-              onClick={handleSplit}
-              disabled={isLocked}
-              className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title={`Split at cursor or create new (${isMac ? 'Ctrl+N' : 'Alt+N'})`}
-            >
-              Split
-            </button>
+              <button
+                onClick={handleSplit}
+                disabled={isLocked}
+                className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                title={`Split at cursor or create new (${isMac ? 'Ctrl+N' : 'Alt+N'})`}
+              >
+                Split
+              </button>
 
-            <button
-              onClick={handleMerge}
-              disabled={isLocked || !currentNode || currentNode.id === currentTree?.rootId}
-              className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title={`Merge with parent (${isMac ? 'Ctrl+M' : 'Alt+M'})`}
-            >
-              Merge
-            </button>
+              <button
+                onClick={handleMerge}
+                disabled={isLocked || !currentNode || currentNode.id === currentTree?.rootId}
+                className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                title={`Merge with parent (${isMac ? 'Ctrl+M' : 'Alt+M'})`}
+              >
+                Merge
+              </button>
 
-            <button
-              onClick={handleMass}
-              disabled={!currentTree}
-              className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title={`Mass merge single children (${isMac ? 'Ctrl+Shift+M' : 'Alt+Shift+M'})`}
-            >
-              Mass
-            </button>
+              <button
+                onClick={handleMass}
+                disabled={!currentTree}
+                className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                title={`Mass merge single children (${isMac ? 'Ctrl+Shift+M' : 'Alt+Shift+M'})`}
+              >
+                Mass
+              </button>
 
-            <button
-              onClick={handleMark}
-              disabled={!currentTree}
-              className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title={`Toggle bookmark (${isMac ? 'Ctrl+B' : 'Alt+B'})`}
-            >
-              Mark
-            </button>
+              <button
+                onClick={handleMark}
+                disabled={!currentTree}
+                className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                title={`Toggle bookmark (${isMac ? 'Ctrl+B' : 'Alt+B'})`}
+              >
+                Mark
+              </button>
 
-            <button
-              onClick={handleTrail}
-              className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors"
-              title={`Toggle grey read-only text (${isMac ? 'Ctrl+.' : 'Alt+.'})`}
-            >
-              Trail
-            </button>
-          </>
+              <button
+                onClick={handleTrail}
+                className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors whitespace-nowrap"
+                title={`Toggle grey read-only text (${isMac ? 'Ctrl+.' : 'Alt+.'})`}
+              >
+                Trail
+              </button>
+            </div>
+            {/* Fade gradients - opacity changes smoothly based on scroll position */}
+            <div
+              className="absolute left-0 top-0 bottom-0 w-4 pointer-events-none bg-gradient-to-r from-sky-medium to-transparent transition-opacity duration-150"
+              style={{ opacity: showLeftGradient ? 1 : 0 }}
+            />
+            <div
+              className="absolute right-0 top-0 bottom-0 w-4 pointer-events-none bg-gradient-to-l from-sky-medium to-transparent transition-opacity duration-150"
+              style={{ opacity: showRightGradient ? 1 : 0 }}
+            />
+          </div>
         )}
 
         {/* Status indicator */}
         {isLocked && (
-          <span className="px-2 py-1 rounded bg-sky-dark text-white">
-            🔒 Locked: {lockReasonLabel}
+          <span className="px-2 py-1 rounded bg-sky-dark text-white whitespace-nowrap">
+            🔒 {lockReasonLabel}
           </span>
         )}
         {!isLocked && <span className="text-gray-600">Ready</span>}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-shrink-0">
         {/* Graph zoom controls - only shown when Graph window is active */}
         {ribbonWindow === 'Graph' && (
           <>
