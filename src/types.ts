@@ -15,6 +15,8 @@ export interface Tree {
   rootId: string;
   currentNodeId: string;
   bookmarkedNodeIds: string[]; // IDs of bookmarked nodes
+  providerUrl?: string; // Custom provider URL (e.g., for local LLMs or alternative providers)
+  providerApiKey?: string; // API key specific to this tree's provider
 }
 
 export interface ScoutConfig {

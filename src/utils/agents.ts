@@ -109,11 +109,16 @@ export async function expandNode(
     // Generate continuations in parallel
     const promises = Array.from({ length: count }, async () => {
       try {
+        // Use tree-specific provider settings if available, otherwise fall back to global settings
+        const effectiveApiKey = tree.providerApiKey || apiKey;
+        const providerUrl = tree.providerUrl; // Optional, will default to OpenRouter if not set
+
         const completion = await callContinuationModel(
-          apiKey,
+          effectiveApiKey,
           branchText,
           settings.continuations,
-          settings.continuations.assistantMode
+          settings.continuations.assistantMode,
+          providerUrl
         );
         return completion;
       } catch (error) {
@@ -177,12 +182,17 @@ export async function scoutDecision(
       ? useStore.getState().tuning.openaiApiKey
       : undefined;
 
+    // Use tree-specific provider settings if available, otherwise fall back to global settings
+    const effectiveApiKey = tree.providerApiKey || apiKey;
+    const providerUrl = tree.providerUrl; // Optional, will default to OpenRouter if not set
+
     const response = await callAssistantModel(
-      apiKey,
+      effectiveApiKey,
       systemMessage,
       userMessage,
       settings.assistant,
-      openaiApiKey
+      openaiApiKey,
+      providerUrl
     );
 
     // Parse for <decision>expand</decision> or <decision>cull</decision> tags
@@ -254,12 +264,18 @@ async function witnessDecision(
       ? useStore.getState().tuning.openaiApiKey
       : undefined;
 
+    // Use tree-specific provider settings if available, otherwise fall back to global settings
+    const parentNode = tree.nodes.get(parentId);
+    const effectiveApiKey = tree.providerApiKey || apiKey;
+    const providerUrl = tree.providerUrl; // Optional, will default to OpenRouter if not set
+
     const response = await callAssistantModel(
-      apiKey,
+      effectiveApiKey,
       systemMessage,
       userMessage,
       settings.assistant,
-      openaiApiKey
+      openaiApiKey,
+      providerUrl
     );
 
     // Parse for <choice>X</choice> tag
@@ -325,12 +341,17 @@ export async function copilotDecision(
       ? useStore.getState().tuning.openaiApiKey
       : undefined;
 
+    // Use tree-specific provider settings if available, otherwise fall back to global settings
+    const effectiveApiKey = tree.providerApiKey || apiKey;
+    const providerUrl = tree.providerUrl; // Optional, will default to OpenRouter if not set
+
     const response = await callAssistantModel(
-      apiKey,
+      effectiveApiKey,
       systemMessage,
       userMessage,
       settings.assistant,
-      openaiApiKey
+      openaiApiKey,
+      providerUrl
     );
 
     // Parse for <decision>expand</decision> or <decision>cull</decision> tags

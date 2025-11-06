@@ -2,7 +2,7 @@ import { ModelSettings } from '../types';
 import OpenAI from 'openai';
 import { useStore } from '../store';
 
-const API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const DEFAULT_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 // Helper to log errors to terminal
 const logToTerminal = (message: string) => {
@@ -77,14 +77,16 @@ export async function callContinuationModel(
   apiKey: string,
   text: string,
   settings: ModelSettings,
-  assistantMode?: boolean
+  assistantMode?: boolean,
+  providerUrl?: string
 ): Promise<string> {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
   const store = useStore.getState();
   const verbose = store.terminalVerbose;
   const idPrefix = verbose ? `[${requestId}] ` : '';
+  const apiUrl = providerUrl || DEFAULT_API_URL;
 
-  store.addTerminalMessage('info', `${idPrefix}Calling continuation model: ${settings.modelName} (${assistantMode ? 'assistant mode' : 'normal mode'})`);
+  store.addTerminalMessage('info', `${idPrefix}Calling continuation model: ${settings.modelName} (${assistantMode ? 'assistant mode' : 'normal mode'}) via ${apiUrl}`);
   store.addTerminalMessage('debug', `[${requestId}] Input: ${text.length} chars, max_tokens: ${settings.maxTokens}, temp: ${settings.temperature}`);
 
   return withRetry(async () => {
@@ -103,7 +105,7 @@ export async function callContinuationModel(
       request.messages = [{ role: 'user', content: text }];
     }
 
-    const response = await fetch(API_URL, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -116,7 +118,7 @@ export async function callContinuationModel(
 
     if (!response.ok) {
       const errorText = await response.text();
-      const errorMsg = `OpenRouter API request failed (${response.status} ${response.statusText}): ${errorText}`;
+      const errorMsg = `API request failed (${response.status} ${response.statusText}): ${errorText}`;
       logToTerminal(errorMsg);
       throw new Error(errorMsg);
     }
@@ -149,15 +151,17 @@ export async function callAssistantModel(
   systemPrompt: string,
   userMessage: string,
   settings: ModelSettings & { useFinetuned?: boolean },
-  openaiApiKey?: string
+  openaiApiKey?: string,
+  providerUrl?: string
 ): Promise<string> {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-  const modelSource = settings.useFinetuned && openaiApiKey ? 'OpenAI' : 'OpenRouter';
+  const apiUrl = providerUrl || DEFAULT_API_URL;
+  const modelSource = settings.useFinetuned && openaiApiKey ? 'OpenAI' : (providerUrl ? 'Custom Provider' : 'OpenRouter');
   const store = useStore.getState();
   const verbose = store.terminalVerbose;
   const idPrefix = verbose ? `[${requestId}] ` : '';
 
-  store.addTerminalMessage('info', `${idPrefix}Calling assistant model via ${modelSource}: ${settings.modelName}`);
+  store.addTerminalMessage('info', `${idPrefix}Calling assistant model via ${modelSource}: ${settings.modelName}${providerUrl ? ` at ${providerUrl}` : ''}`);
   store.addTerminalMessage('debug', `[${requestId}] System prompt: ${systemPrompt.length} chars, user message: ${userMessage.length} chars, max_tokens: ${settings.maxTokens}`);
 
   // If using fine-tuned model, call OpenAI API directly
@@ -215,7 +219,7 @@ export async function callAssistantModel(
       max_tokens: settings.maxTokens,
     };
 
-    const response = await fetch(API_URL, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -228,7 +232,7 @@ export async function callAssistantModel(
 
     if (!response.ok) {
       const errorText = await response.text();
-      const errorMsg = `OpenRouter API request failed (${response.status} ${response.statusText}): ${errorText}`;
+      const errorMsg = `API request failed (${response.status} ${response.statusText}): ${errorText}`;
       logToTerminal(errorMsg);
       throw new Error(errorMsg);
     }

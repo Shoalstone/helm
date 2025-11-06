@@ -190,11 +190,17 @@ const Actions: React.FC = () => {
         }
 
         try {
+          // Use tree-specific provider settings if available, otherwise fall back to global settings
+          const effectiveApiKey = currentTree.providerApiKey || settings.apiKey;
+          const providerUrl = currentTree.providerUrl; // Optional, will default to OpenRouter if not set
+
           const response = await callAssistantModel(
-            settings.apiKey,
+            effectiveApiKey,
             systemPrompt,
             userMessage,
-            settings.assistant
+            settings.assistant,
+            undefined, // No OpenAI API key needed for this
+            providerUrl
           );
 
           // Store the output

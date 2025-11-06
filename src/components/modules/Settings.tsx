@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store';
 
 const Settings: React.FC = () => {
-  const { settings, updateSettings, tuning } = useStore();
+  const { settings, updateSettings, tuning, currentTree, updateTreeProviderSettings } = useStore();
   const [expandedSection, setExpandedSection] = useState<string | null>('continuations');
   const [confirmingClearContinuations, setConfirmingClearContinuations] = useState(false);
   const [confirmingClearAssistant, setConfirmingClearAssistant] = useState(false);
@@ -119,7 +119,7 @@ const Settings: React.FC = () => {
         {/* API Key */}
         <div className="mb-4">
           <label className="block text-xs font-medium text-gray-700 mb-1">
-            OpenRouter API Key
+            OpenRouter API Key (Global)
           </label>
           <input
             type="password"
@@ -128,6 +128,59 @@ const Settings: React.FC = () => {
             className="w-full px-2 py-1 text-xs rounded border border-sky-medium focus:outline-none focus:ring-2 focus:ring-sky-dark"
             placeholder="sk-..."
           />
+        </div>
+
+        {/* Provider Settings (Per-Tree) */}
+        <div className="mb-2">
+          <button
+            onClick={() => toggleSection('provider')}
+            className="w-full flex items-center justify-between px-3 py-2 bg-sky-medium rounded-lg hover:bg-sky-dark transition-colors"
+          >
+            <span className="text-sm font-medium text-gray-800">Provider Settings (Per-Tree)</span>
+            <span className="text-gray-600">{expandedSection === 'provider' ? '▼' : '▶'}</span>
+          </button>
+
+          {expandedSection === 'provider' && (
+            <div className="mt-2 p-3 bg-white rounded-lg space-y-3">
+              {!currentTree ? (
+                <p className="text-xs text-gray-600 italic">No tree loaded. Provider settings are per-tree.</p>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Provider URL
+                    </label>
+                    <input
+                      type="text"
+                      value={currentTree.providerUrl || ''}
+                      onChange={(e) => updateTreeProviderSettings(e.target.value || undefined, currentTree.providerApiKey)}
+                      className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
+                      placeholder="https://openrouter.ai/api/v1/chat/completions (default)"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Leave empty to use OpenRouter. Set to use local LLMs (e.g., http://localhost:1234/v1/chat/completions) or alternative providers.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Provider API Key (Optional)
+                    </label>
+                    <input
+                      type="password"
+                      value={currentTree.providerApiKey || ''}
+                      onChange={(e) => updateTreeProviderSettings(currentTree.providerUrl, e.target.value || undefined)}
+                      className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
+                      placeholder="Leave empty to use global API key"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      If not set, the global API key will be used. Set this to use a different API key for this tree.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Continuations Settings */}
