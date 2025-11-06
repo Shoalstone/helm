@@ -98,7 +98,7 @@ const RightPanel: React.FC = () => {
         </select>
 
         <button
-          className="px-1.5 py-0.5 rounded text-base bg-sky-accent hover:bg-sky-dark text-gray-800 border-none outline-none transition-colors cursor-pointer h-6 flex items-center"
+          className="w-6 h-6 rounded text-base bg-sky-accent hover:bg-sky-dark text-gray-800 border-none outline-none transition-colors cursor-pointer flex items-center justify-center"
           onClick={togglePanelSet}
           title={`Switch to Set ${panelSetToggle ? 'A' : 'B'}`}
         >
