@@ -81,6 +81,12 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform);
 
+  // Drag-to-scroll state
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const draggedRef = useRef(false);
+
   const currentNode = currentTree?.nodes.get(currentTree.currentNodeId);
   const isLocked = currentNode?.locked || false;
   const lockReason = currentNode?.lockReason || null;
@@ -166,6 +172,74 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
       setShowRightGradient(false);
     }
   }, [commandsExpanded]);
+
+  // Drag-to-scroll handlers
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    // Only handle left mouse button or touch
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+
+    setIsDragging(true);
+    setStartX(e.pageX - container.offsetLeft);
+    setScrollLeft(container.scrollLeft);
+    draggedRef.current = false; // Reset dragged flag
+    container.style.cursor = 'grabbing';
+    container.style.userSelect = 'none';
+
+    // Prevent any default drag behavior
+    e.preventDefault();
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const x = e.pageX - container.offsetLeft;
+    const walk = (x - startX) * 1.5; // Multiply for faster scroll
+
+    // If moved more than a few pixels, consider it a drag
+    if (Math.abs(walk) > 3) {
+      e.preventDefault();
+      draggedRef.current = true;
+      container.scrollLeft = scrollLeft - walk;
+    }
+  };
+
+  const handlePointerUp = () => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    setIsDragging(false);
+    container.style.cursor = 'grab';
+    container.style.userSelect = '';
+
+    // Reset dragged flag after a short delay to prevent clicks
+    if (draggedRef.current) {
+      setTimeout(() => {
+        draggedRef.current = false;
+      }, 100);
+    }
+  };
+
+  const handlePointerLeave = () => {
+    if (isDragging) {
+      handlePointerUp();
+    }
+  };
+
+  // Helper to prevent button clicks during/after drag
+  const handleButtonClick = (callback: () => void) => (e: React.MouseEvent) => {
+    if (draggedRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    callback();
+  };
 
   // Command button handlers
   const handleGenerate = async () => {
@@ -343,10 +417,18 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
             <div
               ref={scrollContainerRef}
               onScroll={updateScrollGradients}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerLeave={handlePointerLeave}
               className="flex items-center gap-2 overflow-x-auto scrollbar-hide"
+              style={{
+                cursor: isDragging ? 'grabbing' : 'grab',
+                touchAction: 'pan-x' // Only allow horizontal panning
+              }}
             >
               <button
-                onClick={handleGenerate}
+                onClick={handleButtonClick(handleGenerate)}
                 disabled={isLocked}
                 className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 title={`Generate continuations (${isMac ? 'Ctrl+Space' : 'Alt+Enter'})`}
@@ -355,7 +437,7 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
               </button>
 
               <button
-                onClick={handleCull}
+                onClick={handleButtonClick(handleCull)}
                 disabled={isLocked || !currentNode || currentNode.id === currentTree?.rootId}
                 className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 title="Cull node (Alt+Backspace)"
@@ -364,7 +446,7 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
               </button>
 
               <button
-                onClick={handleSplit}
+                onClick={handleButtonClick(handleSplit)}
                 disabled={isLocked}
                 className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 title={`Split at cursor or create new (${isMac ? 'Ctrl+N' : 'Alt+N'})`}
@@ -373,7 +455,7 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
               </button>
 
               <button
-                onClick={handleMerge}
+                onClick={handleButtonClick(handleMerge)}
                 disabled={isLocked || !currentNode || currentNode.id === currentTree?.rootId}
                 className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 title={`Merge with parent (${isMac ? 'Ctrl+M' : 'Alt+M'})`}
@@ -382,7 +464,7 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
               </button>
 
               <button
-                onClick={handleMass}
+                onClick={handleButtonClick(handleMass)}
                 disabled={!currentTree}
                 className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 title={`Mass merge single children (${isMac ? 'Ctrl+Shift+M' : 'Alt+Shift+M'})`}
@@ -391,7 +473,7 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
               </button>
 
               <button
-                onClick={handleMark}
+                onClick={handleButtonClick(handleMark)}
                 disabled={!currentTree}
                 className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 title={`Toggle bookmark (${isMac ? 'Ctrl+B' : 'Alt+B'})`}
@@ -400,7 +482,7 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
               </button>
 
               <button
-                onClick={handleTrail}
+                onClick={handleButtonClick(handleTrail)}
                 className="px-2 py-1 rounded bg-sky-accent hover:bg-sky-light text-xs transition-colors whitespace-nowrap"
                 title={`Toggle grey read-only text (${isMac ? 'Ctrl+.' : 'Alt+.'})`}
               >
