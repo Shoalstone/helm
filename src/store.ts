@@ -422,7 +422,7 @@ interface AppState {
   massMerge: () => void;
   cullAndMergeToBookmarks: () => void;
   updateSettings: (settings: Partial<Settings>) => void;
-  updateTreeProviderSettings: (providerUrl?: string, providerApiKey?: string) => void;
+  updateTreeProviderSettings: (providerUrl?: string, providerApiKey?: string, providerApiFormat?: 'messages' | 'prompt') => void;
   updatePanels: (side: 'left' | 'right', config: Partial<PanelConfig>) => void;
   setBottomPanelHeight: (height: number) => void;
   setRibbonWindow: (window: RibbonWindow) => void;
@@ -1203,7 +1203,7 @@ export const useStore = create<AppState>((set, get) => {
     persistSettings(merged);
   },
 
-  updateTreeProviderSettings: (providerUrl?: string, providerApiKey?: string) => {
+  updateTreeProviderSettings: (providerUrl?: string, providerApiKey?: string, providerApiFormat?: 'messages' | 'prompt') => {
     const tree = get().currentTree;
     if (!tree) return;
 
@@ -1211,6 +1211,7 @@ export const useStore = create<AppState>((set, get) => {
       ...tree,
       providerUrl,
       providerApiKey,
+      providerApiFormat,
       nodes: new Map(tree.nodes),
     };
 

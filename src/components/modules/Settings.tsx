@@ -153,7 +153,7 @@ const Settings: React.FC = () => {
                     <input
                       type="text"
                       value={currentTree.providerUrl || ''}
-                      onChange={(e) => updateTreeProviderSettings(e.target.value || undefined, currentTree.providerApiKey)}
+                      onChange={(e) => updateTreeProviderSettings(e.target.value || undefined, currentTree.providerApiKey, currentTree.providerApiFormat)}
                       className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
                       placeholder="https://openrouter.ai/api/v1/chat/completions (default)"
                     />
@@ -169,12 +169,49 @@ const Settings: React.FC = () => {
                     <input
                       type="password"
                       value={currentTree.providerApiKey || ''}
-                      onChange={(e) => updateTreeProviderSettings(currentTree.providerUrl, e.target.value || undefined)}
+                      onChange={(e) => updateTreeProviderSettings(currentTree.providerUrl, e.target.value || undefined, currentTree.providerApiFormat)}
                       className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
                       placeholder="Leave empty to use global API key"
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       If not set, the global API key will be used. Set this to use a different API key for this tree.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-2">
+                      API Format
+                    </label>
+                    <div className="space-y-2">
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="apiFormat"
+                          value="messages"
+                          checked={!currentTree.providerApiFormat || currentTree.providerApiFormat === 'messages'}
+                          onChange={() => updateTreeProviderSettings(currentTree.providerUrl, currentTree.providerApiKey, 'messages')}
+                          className="mr-2"
+                        />
+                        <span className="text-xs text-gray-700">
+                          <strong>Messages</strong> - OpenAI-compatible (default)
+                        </span>
+                      </label>
+                      <label className="flex items-center cursor-pointer">
+                        <input
+                          type="radio"
+                          name="apiFormat"
+                          value="prompt"
+                          checked={currentTree.providerApiFormat === 'prompt'}
+                          onChange={() => updateTreeProviderSettings(currentTree.providerUrl, currentTree.providerApiKey, 'prompt')}
+                          className="mr-2"
+                        />
+                        <span className="text-xs text-gray-700">
+                          <strong>Prompt</strong> - Raw prompt format (for some local servers)
+                        </span>
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Choose "Messages" for OpenRouter, OpenAI, LM Studio, Ollama. Choose "Prompt" for servers that expect a single prompt string (e.g., SGLang, some Text Generation WebUI setups).
                     </p>
                   </div>
                 </>

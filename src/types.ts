@@ -17,6 +17,7 @@ export interface Tree {
   bookmarkedNodeIds: string[]; // IDs of bookmarked nodes
   providerUrl?: string; // Custom provider URL (e.g., for local LLMs or alternative providers)
   providerApiKey?: string; // API key specific to this tree's provider
+  providerApiFormat?: 'messages' | 'prompt'; // API format: 'messages' for OpenAI-compatible, 'prompt' for raw prompt
 }
 
 export interface ScoutConfig {

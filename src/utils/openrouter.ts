@@ -78,7 +78,8 @@ export async function callContinuationModel(
   text: string,
   settings: ModelSettings,
   assistantMode?: boolean,
-  providerUrl?: string
+  providerUrl?: string,
+  providerApiFormat?: 'messages' | 'prompt'
 ): Promise<string> {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
   const store = useStore.getState();
@@ -97,8 +98,9 @@ export async function callContinuationModel(
       max_tokens: settings.maxTokens,
     };
 
-    // Use raw prompt mode when assistantMode is enabled
-    if (assistantMode) {
+    // Use raw prompt mode when assistantMode is enabled OR when providerApiFormat is 'prompt'
+    const usePromptFormat = assistantMode || providerApiFormat === 'prompt';
+    if (usePromptFormat) {
       request.prompt = text;
       request.transforms = []; // Disable automatic prompt transforms
     } else {
@@ -152,7 +154,8 @@ export async function callAssistantModel(
   userMessage: string,
   settings: ModelSettings & { useFinetuned?: boolean },
   openaiApiKey?: string,
-  providerUrl?: string
+  providerUrl?: string,
+  providerApiFormat?: 'messages' | 'prompt'
 ): Promise<string> {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
   const apiUrl = providerUrl || DEFAULT_API_URL;
@@ -206,18 +209,28 @@ export async function callAssistantModel(
     });
   }
 
-  // Otherwise use OpenRouter
+  // Otherwise use OpenRouter or custom provider
   return withRetry(async () => {
     const request: OpenRouterRequest = {
       model: settings.modelName,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
       temperature: settings.temperature,
       top_p: settings.topP,
       max_tokens: settings.maxTokens,
     };
+
+    // Use prompt format if specified, otherwise use messages format
+    if (providerApiFormat === 'prompt') {
+      // Convert messages to a single prompt string
+      const combinedPrompt = `${systemPrompt}\n\n${userMessage}`;
+      request.prompt = combinedPrompt;
+      request.transforms = []; // Disable automatic prompt transforms
+    } else {
+      // Use messages format (default, OpenAI-compatible)
+      request.messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ];
+    }
 
     const response = await fetch(apiUrl, {
       method: 'POST',

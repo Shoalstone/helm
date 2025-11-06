@@ -112,13 +112,15 @@ export async function expandNode(
         // Use tree-specific provider settings if available, otherwise fall back to global settings
         const effectiveApiKey = tree.providerApiKey || apiKey;
         const providerUrl = tree.providerUrl; // Optional, will default to OpenRouter if not set
+        const providerApiFormat = tree.providerApiFormat; // Optional, will default to 'messages' if not set
 
         const completion = await callContinuationModel(
           effectiveApiKey,
           branchText,
           settings.continuations,
           settings.continuations.assistantMode,
-          providerUrl
+          providerUrl,
+          providerApiFormat
         );
         return completion;
       } catch (error) {
@@ -185,6 +187,7 @@ export async function scoutDecision(
     // Use tree-specific provider settings if available, otherwise fall back to global settings
     const effectiveApiKey = tree.providerApiKey || apiKey;
     const providerUrl = tree.providerUrl; // Optional, will default to OpenRouter if not set
+    const providerApiFormat = tree.providerApiFormat; // Optional, will default to 'messages' if not set
 
     const response = await callAssistantModel(
       effectiveApiKey,
@@ -192,7 +195,8 @@ export async function scoutDecision(
       userMessage,
       settings.assistant,
       openaiApiKey,
-      providerUrl
+      providerUrl,
+      providerApiFormat
     );
 
     // Parse for <decision>expand</decision> or <decision>cull</decision> tags
@@ -267,6 +271,7 @@ async function witnessDecision(
     // Use tree-specific provider settings if available, otherwise fall back to global settings
     const effectiveApiKey = tree.providerApiKey || apiKey;
     const providerUrl = tree.providerUrl; // Optional, will default to OpenRouter if not set
+    const providerApiFormat = tree.providerApiFormat; // Optional, will default to 'messages' if not set
 
     const response = await callAssistantModel(
       effectiveApiKey,
@@ -274,7 +279,8 @@ async function witnessDecision(
       userMessage,
       settings.assistant,
       openaiApiKey,
-      providerUrl
+      providerUrl,
+      providerApiFormat
     );
 
     // Parse for <choice>X</choice> tag
@@ -343,6 +349,7 @@ export async function copilotDecision(
     // Use tree-specific provider settings if available, otherwise fall back to global settings
     const effectiveApiKey = tree.providerApiKey || apiKey;
     const providerUrl = tree.providerUrl; // Optional, will default to OpenRouter if not set
+    const providerApiFormat = tree.providerApiFormat; // Optional, will default to 'messages' if not set
 
     const response = await callAssistantModel(
       effectiveApiKey,
@@ -350,7 +357,8 @@ export async function copilotDecision(
       userMessage,
       settings.assistant,
       openaiApiKey,
-      providerUrl
+      providerUrl,
+      providerApiFormat
     );
 
     // Parse for <decision>expand</decision> or <decision>cull</decision> tags
