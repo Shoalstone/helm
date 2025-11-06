@@ -265,7 +265,6 @@ async function witnessDecision(
       : undefined;
 
     // Use tree-specific provider settings if available, otherwise fall back to global settings
-    const parentNode = tree.nodes.get(parentId);
     const effectiveApiKey = tree.providerApiKey || apiKey;
     const providerUrl = tree.providerUrl; // Optional, will default to OpenRouter if not set
 
