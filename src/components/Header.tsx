@@ -244,7 +244,7 @@ const Header: React.FC = () => {
                 onClick={() => setShowNewTreeDialog(true)}
                 className="px-3 py-1 rounded-lg bg-sky-accent text-gray-800 text-sm hover:bg-sky-light transition-colors shadow-sm"
               >
-                New Tree
+                New
               </button>
 
               <button
@@ -255,14 +255,14 @@ const Header: React.FC = () => {
                 disabled={!currentTree}
                 className="px-3 py-1 rounded-lg bg-sky-accent text-gray-800 text-sm hover:bg-sky-light transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Rename Tree
+                Rename
               </button>
 
               <button
                 onClick={handleImportTree}
                 className="px-3 py-1 rounded-lg bg-sky-accent text-gray-800 text-sm hover:bg-sky-light transition-colors shadow-sm"
               >
-                Import Tree
+                Import
               </button>
 
               <button
@@ -270,7 +270,7 @@ const Header: React.FC = () => {
                 disabled={!currentTree}
                 className="px-3 py-1 rounded-lg bg-sky-accent text-gray-800 text-sm hover:bg-sky-light transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Export Tree
+                Export
               </button>
 
               <button
@@ -278,7 +278,7 @@ const Header: React.FC = () => {
                 disabled={!currentTree}
                 className="px-3 py-1 rounded-lg bg-sky-accent text-gray-800 text-sm hover:bg-sky-light transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Unroll Tree
+                Unroll
               </button>
 
               <button
@@ -286,7 +286,7 @@ const Header: React.FC = () => {
                 disabled={!currentTree}
                 className="px-3 py-1 rounded-lg bg-sky-accent text-gray-800 text-sm hover:bg-sky-light transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Extract Subtree
+                Extract
               </button>
 
               <button
@@ -298,7 +298,7 @@ const Header: React.FC = () => {
                     : 'bg-sky-accent hover:bg-sky-light text-gray-800'
                 }`}
               >
-                {confirmingDelete ? 'Are you sure?' : 'Delete Tree'}
+                {confirmingDelete ? 'Are you sure?' : 'Delete'}
               </button>
             </>
           )}
