@@ -10,9 +10,12 @@ import Settings from './modules/Settings';
 import Training from './modules/Training';
 
 const RightPanel: React.FC = () => {
-  const { rightPanel, updatePanels } = useStore();
+  const { rightPanel, rightPanelSetB, panelSetToggle, updatePanels, togglePanelSet } = useStore();
   const [splitRatio, setSplitRatio] = useState(50);
   const [panelWidth, setPanelWidth] = useState(320); // width in pixels, not persisted
+
+  // Use the active panel set based on toggle state
+  const activePanel = panelSetToggle ? rightPanelSetB : rightPanel;
 
   const modules: PanelModule[] = ['Tree', 'Graph', 'Agents', 'Copilot', 'Actions', 'Training', 'Settings', null];
 
@@ -37,7 +40,7 @@ const RightPanel: React.FC = () => {
     }
   };
 
-  const hasSplit = rightPanel.top && rightPanel.bottom;
+  const hasSplit = activePanel.top && activePanel.bottom;
 
   return (
     <div className="flex relative bg-sky-light border-l border-sky-medium">
@@ -83,7 +86,7 @@ const RightPanel: React.FC = () => {
       <div className="h-10 bg-sky-medium flex items-center px-3 gap-2">
         <select
           className="flex-1 px-2 py-1 rounded text-xs bg-white border-none focus:outline-none focus:ring-1 focus:ring-sky-dark"
-          value={rightPanel.top || ''}
+          value={activePanel.top || ''}
           onChange={(e) => updatePanels('right', { top: (e.target.value || null) as PanelModule })}
         >
           <option value="">Top: None</option>
@@ -94,9 +97,17 @@ const RightPanel: React.FC = () => {
           ))}
         </select>
 
+        <button
+          className="px-1.5 py-0.5 rounded text-base bg-sky-accent hover:bg-sky-dark text-gray-800 border-none outline-none transition-colors cursor-pointer h-6 flex items-center"
+          onClick={togglePanelSet}
+          title={`Switch to Set ${panelSetToggle ? 'A' : 'B'}`}
+        >
+          ◎
+        </button>
+
         <select
           className="flex-1 px-2 py-1 rounded text-xs bg-white border-none focus:outline-none focus:ring-1 focus:ring-sky-dark"
-          value={rightPanel.bottom || ''}
+          value={activePanel.bottom || ''}
           onChange={(e) => updatePanels('right', { bottom: (e.target.value || null) as PanelModule })}
         >
           <option value="">Bottom: None</option>
@@ -112,12 +123,12 @@ const RightPanel: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         {!hasSplit ? (
           <div className="flex-1 overflow-hidden">
-            {renderModule(rightPanel.top || rightPanel.bottom)}
+            {renderModule(activePanel.top || activePanel.bottom)}
           </div>
         ) : (
           <>
             <div style={{ height: `${splitRatio}%` }} className="overflow-hidden">
-              {renderModule(rightPanel.top)}
+              {renderModule(activePanel.top)}
             </div>
             <div
               className="h-1 bg-sky-divider cursor-row-resize hover:bg-sky-medium transition-colors"
@@ -157,7 +168,7 @@ const RightPanel: React.FC = () => {
               }}
             />
             <div style={{ height: `${100 - splitRatio}%` }} className="overflow-hidden">
-              {renderModule(rightPanel.bottom)}
+              {renderModule(activePanel.bottom)}
             </div>
           </>
         )}

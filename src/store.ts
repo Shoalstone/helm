@@ -30,6 +30,16 @@ const DEFAULT_RIGHT_PANEL: PanelConfig = {
   bottom: 'Graph',
 };
 
+const DEFAULT_LEFT_PANEL_SET_B: PanelConfig = {
+  top: null,
+  bottom: null,
+};
+
+const DEFAULT_RIGHT_PANEL_SET_B: PanelConfig = {
+  top: null,
+  bottom: null,
+};
+
 const DEFAULT_SETTINGS: Settings = {
   apiKey: '',
   continuations: {
@@ -192,6 +202,9 @@ interface UIState {
   ribbonWindow: RibbonWindow;
   leftPanel: PanelConfig;
   rightPanel: PanelConfig;
+  leftPanelSetB: PanelConfig;
+  rightPanelSetB: PanelConfig;
+  panelSetToggle: boolean; // false = Set A (default), true = Set B
 }
 
 const DEFAULT_UI_STATE: UIState = {
@@ -199,6 +212,9 @@ const DEFAULT_UI_STATE: UIState = {
   ribbonWindow: 'Help',
   leftPanel: { ...DEFAULT_LEFT_PANEL },
   rightPanel: { ...DEFAULT_RIGHT_PANEL },
+  leftPanelSetB: { ...DEFAULT_LEFT_PANEL_SET_B },
+  rightPanelSetB: { ...DEFAULT_RIGHT_PANEL_SET_B },
+  panelSetToggle: false,
 };
 
 const loadUIState = (): UIState => {
@@ -224,6 +240,15 @@ const loadUIState = (): UIState => {
         ...DEFAULT_RIGHT_PANEL,
         ...(parsed.rightPanel ?? {}),
       },
+      leftPanelSetB: {
+        ...DEFAULT_LEFT_PANEL_SET_B,
+        ...(parsed.leftPanelSetB ?? {}),
+      },
+      rightPanelSetB: {
+        ...DEFAULT_RIGHT_PANEL_SET_B,
+        ...(parsed.rightPanelSetB ?? {}),
+      },
+      panelSetToggle: parsed.panelSetToggle ?? DEFAULT_UI_STATE.panelSetToggle,
     };
   } catch (error) {
     console.error('Failed to load UI state from storage', error);
@@ -232,6 +257,9 @@ const loadUIState = (): UIState => {
       ribbonWindow: DEFAULT_UI_STATE.ribbonWindow,
       leftPanel: { ...DEFAULT_LEFT_PANEL },
       rightPanel: { ...DEFAULT_RIGHT_PANEL },
+      leftPanelSetB: { ...DEFAULT_LEFT_PANEL_SET_B },
+      rightPanelSetB: { ...DEFAULT_RIGHT_PANEL_SET_B },
+      panelSetToggle: DEFAULT_UI_STATE.panelSetToggle,
     };
   }
 };
@@ -383,6 +411,9 @@ interface AppState {
   // UI state
   leftPanel: PanelConfig;
   rightPanel: PanelConfig;
+  leftPanelSetB: PanelConfig;
+  rightPanelSetB: PanelConfig;
+  panelSetToggle: boolean; // false = Set A, true = Set B
   bottomPanelHeight: number; // Height as percentage of available space below ribbon
   ribbonWindow: RibbonWindow; // Which window is displayed below the ribbon
 
@@ -423,6 +454,7 @@ interface AppState {
   cullAndMergeToBookmarks: () => void;
   updateSettings: (settings: Partial<Settings>) => void;
   updatePanels: (side: 'left' | 'right', config: Partial<PanelConfig>) => void;
+  togglePanelSet: () => void;
   setBottomPanelHeight: (height: number) => void;
   setRibbonWindow: (window: RibbonWindow) => void;
 
@@ -505,6 +537,9 @@ export const useStore = create<AppState>((set, get) => {
       ribbonWindow: overrides?.ribbonWindow ?? state.ribbonWindow,
       leftPanel: overrides?.leftPanel ?? state.leftPanel,
       rightPanel: overrides?.rightPanel ?? state.rightPanel,
+      leftPanelSetB: overrides?.leftPanelSetB ?? state.leftPanelSetB,
+      rightPanelSetB: overrides?.rightPanelSetB ?? state.rightPanelSetB,
+      panelSetToggle: overrides?.panelSetToggle ?? state.panelSetToggle,
     });
   };
 
@@ -535,6 +570,9 @@ export const useStore = create<AppState>((set, get) => {
 
     leftPanel: uiState.leftPanel,
     rightPanel: uiState.rightPanel,
+    leftPanelSetB: uiState.leftPanelSetB,
+    rightPanelSetB: uiState.rightPanelSetB,
+    panelSetToggle: uiState.panelSetToggle,
 
     bottomPanelHeight: uiState.bottomPanelHeight,
     ribbonWindow: uiState.ribbonWindow,
@@ -1203,16 +1241,37 @@ export const useStore = create<AppState>((set, get) => {
   },
 
   updatePanels: (side: 'left' | 'right', config: Partial<PanelConfig>) => {
-    const panel = side === 'left' ? get().leftPanel : get().rightPanel;
-    const updated = { ...panel, ...config };
+    const state = get();
+    const isSetB = state.panelSetToggle;
 
     if (side === 'left') {
-      set({ leftPanel: updated });
-      persistCurrentUIState({ leftPanel: updated });
+      if (isSetB) {
+        const updated = { ...state.leftPanelSetB, ...config };
+        set({ leftPanelSetB: updated });
+        persistCurrentUIState({ leftPanelSetB: updated });
+      } else {
+        const updated = { ...state.leftPanel, ...config };
+        set({ leftPanel: updated });
+        persistCurrentUIState({ leftPanel: updated });
+      }
     } else {
-      set({ rightPanel: updated });
-      persistCurrentUIState({ rightPanel: updated });
+      if (isSetB) {
+        const updated = { ...state.rightPanelSetB, ...config };
+        set({ rightPanelSetB: updated });
+        persistCurrentUIState({ rightPanelSetB: updated });
+      } else {
+        const updated = { ...state.rightPanel, ...config };
+        set({ rightPanel: updated });
+        persistCurrentUIState({ rightPanel: updated });
+      }
     }
+  },
+
+  togglePanelSet: () => {
+    const state = get();
+    const newToggle = !state.panelSetToggle;
+    set({ panelSetToggle: newToggle });
+    persistCurrentUIState({ panelSetToggle: newToggle });
   },
 
   setBottomPanelHeight: (height: number) => {
