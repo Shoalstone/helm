@@ -409,11 +409,11 @@ const StatusRibbon: React.FC<StatusRibbonProps> = ({
             </div>
             {/* Fade gradients - opacity changes smoothly based on scroll position */}
             <div
-              className="absolute left-0 top-0 bottom-0 w-4 pointer-events-none bg-gradient-to-r from-sky-medium to-transparent transition-opacity duration-150"
+              className="absolute left-0 top-0 bottom-0 w-4 pointer-events-none bg-gradient-to-r from-sky-medium to-transparent transition-opacity duration-75"
               style={{ opacity: showLeftGradient ? 1 : 0 }}
             />
             <div
-              className="absolute right-0 top-0 bottom-0 w-4 pointer-events-none bg-gradient-to-l from-sky-medium to-transparent transition-opacity duration-150"
+              className="absolute right-0 top-0 bottom-0 w-4 pointer-events-none bg-gradient-to-l from-sky-medium to-transparent transition-opacity duration-75"
               style={{ opacity: showRightGradient ? 1 : 0 }}
             />
           </div>
