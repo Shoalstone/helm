@@ -71,6 +71,7 @@ export interface Settings {
     useCustomEndpoint?: boolean; // Toggle to use custom OpenAI-compatible endpoint
     customBaseUrl?: string; // Custom base URL for OpenAI-compatible API
     customApiKey?: string; // API key for custom endpoint
+    customEndpointFormat?: 'openai' | 'raw'; // Format for custom endpoint requests
   };
   assistant: ModelSettings & {
     savedModels?: string[];
@@ -79,6 +80,7 @@ export interface Settings {
     useCustomEndpoint?: boolean; // Toggle to use custom OpenAI-compatible endpoint
     customBaseUrl?: string; // Custom base URL for OpenAI-compatible API
     customApiKey?: string; // API key for custom endpoint
+    customEndpointFormat?: 'openai' | 'raw'; // Format for custom endpoint requests
   };
 }
 

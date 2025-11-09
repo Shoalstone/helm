@@ -330,9 +330,6 @@ const Settings: React.FC = () => {
                       className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
                       placeholder="http://localhost:8000/v1/chat/completions"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      OpenAI-compatible API
-                    </p>
 
                     <label className="block text-xs font-medium text-gray-700 mb-1 mt-3">API Key</label>
                     <input
@@ -349,6 +346,44 @@ const Settings: React.FC = () => {
                       className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
                       placeholder="Optional API key for custom endpoint"
                     />
+
+                    <label className="block text-xs font-medium text-gray-700 mb-1 mt-3">Request Format</label>
+                    <div className="flex flex-col gap-1">
+                      <label className="flex items-center text-xs text-gray-700">
+                        <input
+                          type="radio"
+                          name="continuations-format"
+                          checked={(settings.continuations.customEndpointFormat ?? 'openai') === 'openai'}
+                          onChange={() =>
+                            updateSettings({
+                              continuations: {
+                                ...settings.continuations,
+                                customEndpointFormat: 'openai',
+                              },
+                            })
+                          }
+                          className="mr-1"
+                        />
+                        OpenAI-compatible
+                      </label>
+                      <label className="flex items-center text-xs text-gray-700">
+                        <input
+                          type="radio"
+                          name="continuations-format"
+                          checked={settings.continuations.customEndpointFormat === 'raw'}
+                          onChange={() =>
+                            updateSettings({
+                              continuations: {
+                                ...settings.continuations,
+                                customEndpointFormat: 'raw',
+                              },
+                            })
+                          }
+                          className="mr-1"
+                        />
+                        Raw prompt format
+                      </label>
+                    </div>
                   </div>
                 )}
               </div>
@@ -581,9 +616,6 @@ const Settings: React.FC = () => {
                       className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
                       placeholder="http://localhost:8000/v1/chat/completions"
                     />
-                    <p className="text-xs text-gray-500 mt-1">
-                      OpenAI-compatible API
-                    </p>
 
                     <label className="block text-xs font-medium text-gray-700 mb-1 mt-3">API Key</label>
                     <input
@@ -600,6 +632,44 @@ const Settings: React.FC = () => {
                       className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
                       placeholder="Optional API key for custom endpoint"
                     />
+
+                    <label className="block text-xs font-medium text-gray-700 mb-1 mt-3">Request Format</label>
+                    <div className="flex flex-col gap-1">
+                      <label className="flex items-center text-xs text-gray-700">
+                        <input
+                          type="radio"
+                          name="assistant-format"
+                          checked={(settings.assistant.customEndpointFormat ?? 'openai') === 'openai'}
+                          onChange={() =>
+                            updateSettings({
+                              assistant: {
+                                ...settings.assistant,
+                                customEndpointFormat: 'openai',
+                              },
+                            })
+                          }
+                          className="mr-1"
+                        />
+                        OpenAI-compatible
+                      </label>
+                      <label className="flex items-center text-xs text-gray-700">
+                        <input
+                          type="radio"
+                          name="assistant-format"
+                          checked={settings.assistant.customEndpointFormat === 'raw'}
+                          onChange={() =>
+                            updateSettings({
+                              assistant: {
+                                ...settings.assistant,
+                                customEndpointFormat: 'raw',
+                              },
+                            })
+                          }
+                          className="mr-1"
+                        />
+                        Raw prompt format
+                      </label>
+                    </div>
                   </div>
                 )}
               </div>

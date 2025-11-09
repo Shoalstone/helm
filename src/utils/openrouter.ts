@@ -76,7 +76,7 @@ async function withRetry<T>(
 export async function callContinuationModel(
   apiKey: string,
   text: string,
-  settings: ModelSettings & { useCustomEndpoint?: boolean; customBaseUrl?: string; customApiKey?: string },
+  settings: ModelSettings & { useCustomEndpoint?: boolean; customBaseUrl?: string; customApiKey?: string; customEndpointFormat?: 'openai' | 'raw' },
   assistantMode?: boolean
 ): Promise<string> {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
@@ -115,8 +115,10 @@ export async function callContinuationModel(
       max_tokens: settings.maxTokens,
     };
 
-    // Use raw prompt mode when assistantMode is enabled
-    if (assistantMode) {
+    // Determine format: use raw prompt mode when assistantMode is enabled OR when custom endpoint with raw format
+    const useRawFormat = assistantMode || (settings.useCustomEndpoint && settings.customEndpointFormat === 'raw');
+
+    if (useRawFormat) {
       request.prompt = text;
       request.transforms = []; // Disable automatic prompt transforms
     } else {
@@ -168,7 +170,7 @@ export async function callAssistantModel(
   apiKey: string,
   systemPrompt: string,
   userMessage: string,
-  settings: ModelSettings & { useFinetuned?: boolean; useCustomEndpoint?: boolean; customBaseUrl?: string; customApiKey?: string },
+  settings: ModelSettings & { useFinetuned?: boolean; useCustomEndpoint?: boolean; customBaseUrl?: string; customApiKey?: string; customEndpointFormat?: 'openai' | 'raw' },
   openaiApiKey?: string
 ): Promise<string> {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
@@ -255,14 +257,23 @@ export async function callAssistantModel(
 
     const request: OpenRouterRequest = {
       model: settings.modelName,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
       temperature: settings.temperature,
       top_p: settings.topP,
       max_tokens: settings.maxTokens,
     };
+
+    // Use raw prompt format if custom endpoint with raw format is selected
+    if (settings.useCustomEndpoint && settings.customEndpointFormat === 'raw') {
+      // Combine system prompt and user message into a single raw prompt
+      request.prompt = `${systemPrompt}\n\n${userMessage}`;
+      request.transforms = []; // Disable automatic prompt transforms
+    } else {
+      // Use OpenAI-compatible messages format
+      request.messages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ];
+    }
 
     const response = await fetch(apiUrl, {
       method: 'POST',
