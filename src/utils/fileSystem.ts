@@ -3,6 +3,10 @@ import { Tree, TreeNode } from '../types';
 // Check if we're in Electron
 const isElectron = typeof window !== 'undefined' && window.electronAPI;
 
+// LocalStorage key prefix for browser mode
+const LOCALSTORAGE_TREES_KEY = 'helm-trees';
+const LOCALSTORAGE_TREE_PREFIX = 'helm-tree-';
+
 // Get the trees directory path
 async function getTreesDir(): Promise<string> {
   if (!isElectron) {
@@ -25,7 +29,16 @@ export async function ensureTreesDirectory() {
 
 // Get list of all tree IDs
 export async function getTreeListAsync(): Promise<string[]> {
-  if (!isElectron) return [];
+  if (!isElectron) {
+    // Use localStorage in browser mode
+    try {
+      const stored = localStorage.getItem(LOCALSTORAGE_TREES_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('Error reading tree list from localStorage:', error);
+      return [];
+    }
+  }
 
   await ensureTreesDirectory();
   const treesDir = await getTreesDir();
@@ -52,7 +65,33 @@ export async function getTreeListAsync(): Promise<string[]> {
 // Load a tree from disk
 export async function loadTree(treeId: string): Promise<Tree> {
   if (!isElectron) {
-    throw new Error('File system not available');
+    // Use localStorage in browser mode
+    try {
+      const key = LOCALSTORAGE_TREE_PREFIX + treeId;
+      const data = localStorage.getItem(key);
+      if (!data) {
+        throw new Error(`Tree "${treeId}" not found`);
+      }
+      const parsed = JSON.parse(data);
+
+      // Convert nodes array to Map
+      const nodesMap = new Map<string, TreeNode>();
+      parsed.nodes.forEach((node: TreeNode) => {
+        // Unlock all nodes on load since no operations survive a restart
+        node.locked = false;
+        node.lockReason = undefined;
+        nodesMap.set(node.id, node);
+      });
+
+      return {
+        ...parsed,
+        nodes: nodesMap,
+        bookmarkedNodeIds: parsed.bookmarkedNodeIds || [],
+      };
+    } catch (error) {
+      console.error('Error loading tree from localStorage:', error);
+      throw error;
+    }
   }
 
   const treesDir = await getTreesDir();
@@ -84,7 +123,21 @@ export async function loadTree(treeId: string): Promise<Tree> {
 
 // Save a tree to disk
 export async function saveTree(tree: Tree) {
-  if (!isElectron) return;
+  if (!isElectron) {
+    // Use localStorage in browser mode
+    try {
+      const key = LOCALSTORAGE_TREE_PREFIX + tree.id;
+      const nodesArray = Array.from(tree.nodes.values());
+      const data = JSON.stringify({
+        ...tree,
+        nodes: nodesArray,
+      });
+      localStorage.setItem(key, data);
+    } catch (error) {
+      console.error('Error saving tree to localStorage:', error);
+    }
+    return;
+  }
 
   const treesDir = await getTreesDir();
   const treePath = await window.electronAPI.joinPath(treesDir, tree.id);
@@ -116,12 +169,51 @@ export async function saveTree(tree: Tree) {
 
 // Create a new tree
 export async function createNewTree(name: string): Promise<Tree> {
-  if (!isElectron) {
-    throw new Error('File system not available');
-  }
-
-  // Use the name as the tree ID (sanitized for filesystem)
   const treeId = name.trim();
+
+  if (!isElectron) {
+    // Use localStorage in browser mode
+    try {
+      // Get existing tree list
+      const treeList = await getTreeListAsync();
+
+      // Check if tree already exists
+      if (treeList.includes(treeId)) {
+        throw new Error(`A tree named "${name}" already exists`);
+      }
+
+      const rootId = `node_${crypto.randomUUID()}`;
+
+      const rootNode: TreeNode = {
+        id: rootId,
+        text: '',
+        parentId: null,
+        childIds: [],
+        locked: false,
+      };
+
+      const tree: Tree = {
+        id: treeId,
+        name,
+        nodes: new Map([[rootId, rootNode]]),
+        rootId,
+        currentNodeId: rootId,
+        bookmarkedNodeIds: [],
+      };
+
+      // Save the tree
+      await saveTree(tree);
+
+      // Update the tree list
+      const updatedTreeList = [...treeList, treeId];
+      localStorage.setItem(LOCALSTORAGE_TREES_KEY, JSON.stringify(updatedTreeList));
+
+      return tree;
+    } catch (error) {
+      console.error('Error creating tree in localStorage:', error);
+      throw error;
+    }
+  }
 
   // Check if tree already exists
   await ensureTreesDirectory();
@@ -159,7 +251,26 @@ export async function createNewTree(name: string): Promise<Tree> {
 // Delete a tree
 export async function deleteTree(treeId: string): Promise<void> {
   if (!isElectron) {
-    throw new Error('File system not available');
+    // Use localStorage in browser mode
+    try {
+      const key = LOCALSTORAGE_TREE_PREFIX + treeId;
+      const treeList = await getTreeListAsync();
+
+      if (!treeList.includes(treeId)) {
+        throw new Error(`Tree "${treeId}" does not exist`);
+      }
+
+      // Remove the tree data
+      localStorage.removeItem(key);
+
+      // Update the tree list
+      const updatedTreeList = treeList.filter(id => id !== treeId);
+      localStorage.setItem(LOCALSTORAGE_TREES_KEY, JSON.stringify(updatedTreeList));
+    } catch (error) {
+      console.error('Error deleting tree from localStorage:', error);
+      throw error;
+    }
+    return;
   }
 
   const treesDir = await getTreesDir();
@@ -175,8 +286,46 @@ export async function deleteTree(treeId: string): Promise<void> {
 
 // Rename a tree
 export async function renameTree(oldTreeId: string, newTreeName: string): Promise<Tree> {
+  const newTreeId = newTreeName.trim();
+
   if (!isElectron) {
-    throw new Error('File system not available');
+    // Use localStorage in browser mode
+    try {
+      const treeList = await getTreeListAsync();
+
+      // Check if old tree exists
+      if (!treeList.includes(oldTreeId)) {
+        throw new Error(`Tree "${oldTreeId}" does not exist`);
+      }
+
+      // Check if new tree name already exists
+      if (treeList.includes(newTreeId)) {
+        throw new Error(`A tree named "${newTreeName}" already exists`);
+      }
+
+      // Load the tree
+      const tree = await loadTree(oldTreeId);
+
+      // Update tree properties
+      tree.id = newTreeId;
+      tree.name = newTreeName;
+
+      // Save to new location
+      await saveTree(tree);
+
+      // Delete old tree
+      const oldKey = LOCALSTORAGE_TREE_PREFIX + oldTreeId;
+      localStorage.removeItem(oldKey);
+
+      // Update the tree list
+      const updatedTreeList = treeList.map(id => id === oldTreeId ? newTreeId : id);
+      localStorage.setItem(LOCALSTORAGE_TREES_KEY, JSON.stringify(updatedTreeList));
+
+      return tree;
+    } catch (error) {
+      console.error('Error renaming tree in localStorage:', error);
+      throw error;
+    }
   }
 
   const treesDir = await getTreesDir();
@@ -187,9 +336,6 @@ export async function renameTree(oldTreeId: string, newTreeName: string): Promis
   if (!exists) {
     throw new Error(`Tree "${oldTreeId}" does not exist`);
   }
-
-  // Use the new name as the new tree ID (sanitized for filesystem)
-  const newTreeId = newTreeName.trim();
 
   // Check if new tree name already exists
   const newTreePath = await window.electronAPI.joinPath(treesDir, newTreeId);
@@ -216,19 +362,78 @@ export async function renameTree(oldTreeId: string, newTreeName: string): Promis
 
 // Extract a subtree starting from a specific node
 export async function extractSubtree(tree: Tree, nodeId: string, newTreeName: string): Promise<Tree> {
-  if (!isElectron) {
-    throw new Error('File system not available');
-  }
-
   const node = tree.nodes.get(nodeId);
   if (!node) {
     throw new Error('Node not found');
   }
 
+  const treeId = newTreeName.trim();
+
+  if (!isElectron) {
+    // Use localStorage in browser mode
+    try {
+      const treeList = await getTreeListAsync();
+
+      // Check if tree already exists
+      if (treeList.includes(treeId)) {
+        throw new Error(`A tree named "${newTreeName}" already exists`);
+      }
+
+      // Create new tree with the node as root
+      const newNodes = new Map<string, TreeNode>();
+
+      // Recursively copy nodes
+      const copyNode = (oldNodeId: string, newParentId: string | null): string => {
+        const oldNode = tree.nodes.get(oldNodeId);
+        if (!oldNode) return oldNodeId;
+
+        const newNode: TreeNode = {
+          id: oldNode.id,
+          text: oldNode.text,
+          parentId: newParentId,
+          childIds: [],
+          locked: false,
+        };
+
+        newNodes.set(newNode.id, newNode);
+
+        // Copy children
+        oldNode.childIds.forEach(childId => {
+          const newChildId = copyNode(childId, newNode.id);
+          newNode.childIds.push(newChildId);
+        });
+
+        return newNode.id;
+      };
+
+      // Start copying from the selected node (which becomes the new root)
+      const newRootId = copyNode(nodeId, null);
+
+      const newTree: Tree = {
+        id: treeId,
+        name: newTreeName,
+        nodes: newNodes,
+        rootId: newRootId,
+        currentNodeId: newRootId,
+        bookmarkedNodeIds: [],
+      };
+
+      await saveTree(newTree);
+
+      // Update the tree list
+      const updatedTreeList = [...treeList, treeId];
+      localStorage.setItem(LOCALSTORAGE_TREES_KEY, JSON.stringify(updatedTreeList));
+
+      return newTree;
+    } catch (error) {
+      console.error('Error extracting subtree in localStorage:', error);
+      throw error;
+    }
+  }
+
   // Check if tree already exists
   await ensureTreesDirectory();
   const treesDir = await getTreesDir();
-  const treeId = newTreeName.trim();
   const treePath = await window.electronAPI.joinPath(treesDir, treeId);
   const exists = await window.electronAPI.exists(treePath);
 
