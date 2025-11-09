@@ -5,6 +5,12 @@ const TitleBar: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
+    // Check if running in Electron
+    if (!window.electronAPI) {
+      setPlatform('browser');
+      return;
+    }
+
     // Get platform information
     window.electronAPI.getPlatform().then(setPlatform);
 
@@ -28,6 +34,11 @@ const TitleBar: React.FC = () => {
   const handleClose = () => {
     window.electronAPI.windowClose();
   };
+
+  // Don't render in browser mode
+  if (platform === 'browser') {
+    return null;
+  }
 
   // Don't render in fullscreen mode
   if (isFullscreen) {

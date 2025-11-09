@@ -25,6 +25,12 @@ function App() {
   const graphBottomRef = useRef<GraphContentHandle>(null);
 
   useEffect(() => {
+    // Check if running in Electron
+    if (!window.electronAPI) {
+      setPlatform('browser');
+      return;
+    }
+
     window.electronAPI.getPlatform().then(setPlatform);
 
     // Get initial fullscreen state
@@ -36,7 +42,10 @@ function App() {
     });
   }, []);
 
-  const titleBarHeight = isFullscreen ? '0px' : (platform === 'darwin' ? '28px' : '30px');
+  const titleBarHeight =
+    platform === 'browser' ? '0px' :
+    isFullscreen ? '0px' :
+    platform === 'darwin' ? '28px' : '30px';
 
   return (
     <div className="w-full h-full flex flex-col bg-sky-light">
