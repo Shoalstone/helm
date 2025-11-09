@@ -11,6 +11,8 @@ import {
 import { saveTree, loadTree, createNewTree, deleteTree as deleteTreeFromFS, renameTree as renameTreeFromFS, extractSubtree as extractSubtreeFromFS, getTreeListAsync } from './utils/fileSystem';
 
 const SETTINGS_STORAGE_KEY = 'helm-settings';
+const TREE_SETTINGS_STORAGE_KEY_PREFIX = 'helm-tree-settings-'; // Prefix for tree-specific settings
+const TREE_SETTINGS_MODE_STORAGE_KEY_PREFIX = 'helm-tree-settingsmode-'; // Prefix for tree settings mode preference
 const SCOUTS_STORAGE_KEY = 'helm-scouts';
 const COPILOT_STORAGE_KEY = 'helm-copilot';
 const UI_STATE_STORAGE_KEY = 'helm-ui-state';
@@ -100,6 +102,102 @@ const persistSettings = (settings: Settings) => {
     window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
   } catch (error) {
     console.error('Failed to save settings to storage', error);
+  }
+};
+
+const loadTreeSpecificSettings = (treeId: string): Settings => {
+  if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+    return { ...DEFAULT_SETTINGS };
+  }
+
+  try {
+    const stored = window.localStorage.getItem(TREE_SETTINGS_STORAGE_KEY_PREFIX + treeId);
+    if (!stored) {
+      return { ...DEFAULT_SETTINGS };
+    }
+
+    const parsed = JSON.parse(stored) as Partial<Settings>;
+
+    return {
+      ...DEFAULT_SETTINGS,
+      ...parsed,
+      continuations: {
+        ...DEFAULT_SETTINGS.continuations,
+        ...(parsed.continuations ?? {}),
+      },
+      assistant: {
+        ...DEFAULT_SETTINGS.assistant,
+        ...(parsed.assistant ?? {}),
+      },
+    };
+  } catch (error) {
+    console.error('Failed to load tree-specific settings from storage', error);
+    return { ...DEFAULT_SETTINGS };
+  }
+};
+
+const persistTreeSpecificSettings = (treeId: string, settings: Settings) => {
+  if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(TREE_SETTINGS_STORAGE_KEY_PREFIX + treeId, JSON.stringify(settings));
+  } catch (error) {
+    console.error('Failed to save tree-specific settings to storage', error);
+  }
+};
+
+const deleteTreeSpecificSettings = (treeId: string) => {
+  if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(TREE_SETTINGS_STORAGE_KEY_PREFIX + treeId);
+  } catch (error) {
+    console.error('Failed to delete tree-specific settings from storage', error);
+  }
+};
+
+const loadTreeSettingsMode = (treeId: string): 'global' | 'tree-specific' => {
+  if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+    return 'global';
+  }
+
+  try {
+    const stored = window.localStorage.getItem(TREE_SETTINGS_MODE_STORAGE_KEY_PREFIX + treeId);
+    if (stored === 'tree-specific') {
+      return 'tree-specific';
+    }
+    return 'global';
+  } catch (error) {
+    console.error('Failed to load tree settings mode from storage', error);
+    return 'global';
+  }
+};
+
+const persistTreeSettingsMode = (treeId: string, mode: 'global' | 'tree-specific') => {
+  if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(TREE_SETTINGS_MODE_STORAGE_KEY_PREFIX + treeId, mode);
+  } catch (error) {
+    console.error('Failed to save tree settings mode to storage', error);
+  }
+};
+
+const deleteTreeSettingsMode = (treeId: string) => {
+  if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(TREE_SETTINGS_MODE_STORAGE_KEY_PREFIX + treeId);
+  } catch (error) {
+    console.error('Failed to delete tree settings mode from storage', error);
   }
 };
 
@@ -428,6 +526,8 @@ interface AppState {
 
   // Settings
   settings: Settings;
+  getTreeSettingsMode: () => 'global' | 'tree-specific'; // Get current tree's settings mode
+  setTreeSettingsMode: (mode: 'global' | 'tree-specific') => void;
 
   // Tuning
   tuning: TuningConfig;
@@ -555,8 +655,29 @@ export const useStore = create<AppState>((set, get) => {
   if (storedTreeId) {
     loadTree(storedTreeId)
       .then((tree) => {
+        // Load the appropriate settings based on the tree's settings mode
+        const settingsMode = loadTreeSettingsMode(tree.id);
+        let newSettings: Settings;
+        if (settingsMode === 'tree-specific') {
+          // Check if tree-specific settings already exist
+          const hasExistingSettings = typeof window !== 'undefined' &&
+            typeof window.localStorage !== 'undefined' &&
+            window.localStorage.getItem(TREE_SETTINGS_STORAGE_KEY_PREFIX + tree.id) !== null;
+
+          if (hasExistingSettings) {
+            newSettings = loadTreeSpecificSettings(tree.id);
+          } else {
+            // First time using tree-specific mode for this tree
+            // Copy current global settings as the starting point (consistent with manual toggle)
+            newSettings = loadSettings();
+            persistTreeSpecificSettings(tree.id, newSettings);
+          }
+        } else {
+          newSettings = loadSettings();
+        }
+
         // Keep the saved currentNodeId instead of resetting to root
-        set({ currentTree: tree });
+        set({ currentTree: tree, settings: newSettings });
       })
       .catch((error) => {
         console.error(`Failed to load stored tree ${storedTreeId}`, error);
@@ -601,8 +722,30 @@ export const useStore = create<AppState>((set, get) => {
     flushTreeSave();
     try {
       const tree = await loadTree(treeId);
+
+      // Load the appropriate settings based on the tree's settings mode
+      const settingsMode = loadTreeSettingsMode(tree.id);
+      let newSettings: Settings;
+      if (settingsMode === 'tree-specific') {
+        // Check if tree-specific settings already exist
+        const hasExistingSettings = typeof window !== 'undefined' &&
+          typeof window.localStorage !== 'undefined' &&
+          window.localStorage.getItem(TREE_SETTINGS_STORAGE_KEY_PREFIX + tree.id) !== null;
+
+        if (hasExistingSettings) {
+          newSettings = loadTreeSpecificSettings(tree.id);
+        } else {
+          // First time using tree-specific mode for this tree
+          // Copy current global settings as the starting point (consistent with manual toggle)
+          newSettings = loadSettings();
+          persistTreeSpecificSettings(tree.id, newSettings);
+        }
+      } else {
+        newSettings = loadSettings();
+      }
+
       // Keep the saved currentNodeId instead of resetting to root
-      set({ currentTree: tree });
+      set({ currentTree: tree, settings: newSettings });
       persistCurrentTreeId(treeId);
     } catch (error) {
       console.error(`Failed to select tree ${treeId}`, error);
@@ -631,6 +774,19 @@ export const useStore = create<AppState>((set, get) => {
     flushTreeSave();
     const renamedTree = await renameTreeFromFS(oldTreeId, newName);
 
+    // Migrate tree-specific settings and settings mode to new tree ID
+    const settingsMode = loadTreeSettingsMode(oldTreeId);
+    if (settingsMode === 'tree-specific') {
+      // Copy tree-specific settings to new ID
+      const treeSettings = loadTreeSpecificSettings(oldTreeId);
+      persistTreeSpecificSettings(renamedTree.id, treeSettings);
+      deleteTreeSpecificSettings(oldTreeId);
+    }
+
+    // Migrate settings mode preference
+    persistTreeSettingsMode(renamedTree.id, settingsMode);
+    deleteTreeSettingsMode(oldTreeId);
+
     // Update the trees list
     const trees = get().trees.map(id => id === oldTreeId ? renamedTree.id : id);
 
@@ -640,6 +796,9 @@ export const useStore = create<AppState>((set, get) => {
 
   deleteTree: async (treeId: string) => {
     await deleteTreeFromFS(treeId);
+    // Clean up tree-specific settings and settings mode preference
+    deleteTreeSpecificSettings(treeId);
+    deleteTreeSettingsMode(treeId);
     const trees = get().trees.filter(id => id !== treeId);
     const currentTree = get().currentTree;
 
@@ -659,6 +818,17 @@ export const useStore = create<AppState>((set, get) => {
     }
 
     const newTree = await extractSubtreeFromFS(currentTree, currentTree.currentNodeId, name);
+
+    // Inherit parent tree's settings mode and tree-specific settings
+    const parentSettingsMode = loadTreeSettingsMode(currentTree.id);
+    persistTreeSettingsMode(newTree.id, parentSettingsMode);
+
+    if (parentSettingsMode === 'tree-specific') {
+      // Copy parent's tree-specific settings to the new subtree
+      const parentSettings = loadTreeSpecificSettings(currentTree.id);
+      persistTreeSpecificSettings(newTree.id, parentSettings);
+    }
+
     const trees = get().trees;
     set({ trees: [...trees, newTree.id] });
   },
@@ -1222,7 +1392,10 @@ export const useStore = create<AppState>((set, get) => {
   },
 
   updateSettings: (newSettings: Partial<Settings>) => {
-    const settings = get().settings;
+    const state = get();
+    const currentTree = state.currentTree;
+    const settings = state.settings;
+
     const merged: Settings = {
       ...settings,
       ...newSettings,
@@ -1236,8 +1409,69 @@ export const useStore = create<AppState>((set, get) => {
       },
     };
 
+    // Determine where to save based on current tree's settings mode
+    if (currentTree) {
+      const settingsMode = loadTreeSettingsMode(currentTree.id);
+      if (settingsMode === 'tree-specific') {
+        // Save to tree-specific storage
+        persistTreeSpecificSettings(currentTree.id, merged);
+      } else {
+        // Save to global storage
+        persistSettings(merged);
+      }
+    } else {
+      // No tree loaded, save to global
+      persistSettings(merged);
+    }
+
     set({ settings: merged });
-    persistSettings(merged);
+  },
+
+  getTreeSettingsMode: () => {
+    const state = get();
+    const currentTree = state.currentTree;
+
+    if (!currentTree) {
+      return 'global';
+    }
+
+    return loadTreeSettingsMode(currentTree.id);
+  },
+
+  setTreeSettingsMode: (mode: 'global' | 'tree-specific') => {
+    const state = get();
+    const currentTree = state.currentTree;
+
+    if (!currentTree) return;
+
+    // Save the new settings mode preference
+    persistTreeSettingsMode(currentTree.id, mode);
+
+    // Load the appropriate settings
+    let newSettings: Settings;
+    if (mode === 'tree-specific') {
+      // Check if tree-specific settings already exist
+      const hasExistingSettings = typeof window !== 'undefined' &&
+        typeof window.localStorage !== 'undefined' &&
+        window.localStorage.getItem(TREE_SETTINGS_STORAGE_KEY_PREFIX + currentTree.id) !== null;
+
+      if (hasExistingSettings) {
+        // Load existing tree-specific settings
+        newSettings = loadTreeSpecificSettings(currentTree.id);
+      } else {
+        // First time switching to tree-specific: use current settings as the starting point
+        newSettings = { ...state.settings };
+        // Save these as the initial tree-specific settings
+        persistTreeSpecificSettings(currentTree.id, newSettings);
+      }
+    } else {
+      // Load global settings
+      newSettings = loadSettings();
+    }
+
+    set({
+      settings: newSettings,
+    });
   },
 
   updatePanels: (side: 'left' | 'right', config: Partial<PanelConfig>) => {

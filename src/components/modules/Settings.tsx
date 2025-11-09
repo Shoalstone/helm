@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store';
 
 const Settings: React.FC = () => {
-  const { settings, updateSettings, tuning } = useStore();
+  const { settings, updateSettings, tuning, currentTree, getTreeSettingsMode, setTreeSettingsMode } = useStore();
   const [expandedSection, setExpandedSection] = useState<string | null>('continuations');
   const [confirmingClearContinuations, setConfirmingClearContinuations] = useState(false);
   const [confirmingClearAssistant, setConfirmingClearAssistant] = useState(false);
   const clearContinuationsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const clearAssistantTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const settingsMode = getTreeSettingsMode();
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
@@ -115,6 +117,34 @@ const Settings: React.FC = () => {
     <div className="h-full flex flex-col bg-sky-light overflow-y-auto">
       <div className="p-3">
         <h3 className="text-sm font-semibold mb-3 text-gray-800">Settings</h3>
+
+        {/* Settings Mode Toggle */}
+        {currentTree && (
+          <div className="mb-4">
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center text-xs text-gray-700 cursor-pointer">
+                <input
+                  type="radio"
+                  name="settings-mode"
+                  checked={settingsMode === 'global'}
+                  onChange={() => setTreeSettingsMode('global')}
+                  className="mr-2"
+                />
+                Global Settings
+              </label>
+              <label className="flex items-center text-xs text-gray-700 cursor-pointer">
+                <input
+                  type="radio"
+                  name="settings-mode"
+                  checked={settingsMode === 'tree-specific'}
+                  onChange={() => setTreeSettingsMode('tree-specific')}
+                  className="mr-2"
+                />
+                Tree-Specific Settings
+              </label>
+            </div>
+          </div>
+        )}
 
         {/* API Key */}
         <div className="mb-4">
