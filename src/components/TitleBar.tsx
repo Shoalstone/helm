@@ -6,7 +6,7 @@ const TitleBar: React.FC = () => {
 
   useEffect(() => {
     // Check if running in Electron
-    if (!window.electronAPI) {
+    if (typeof window.electronAPI === 'undefined') {
       setPlatform('browser');
       return;
     }
