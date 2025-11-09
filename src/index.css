@@ -9,6 +9,7 @@
   --color-sky-dark: #99CCFF;
   --color-sky-accent: #DCEEFF;
   --color-sky-divider: #D9EBFF;
+  accent-color: var(--color-sky-dark);
 }
 
 /* Sea theme - Deep Ocean */
@@ -18,6 +19,7 @@
   --color-sky-dark: #75B2C8;
   --color-sky-accent: #D5ECF3;
   --color-sky-divider: #D6EBF2;
+  accent-color: var(--color-sky-dark);
 }
 
 /* Sunset theme - Sunset Horizon */
@@ -27,6 +29,7 @@
   --color-sky-dark: #FFA887;
   --color-sky-accent: #FFE4D8;
   --color-sky-divider: #FFE5D9;
+  accent-color: var(--color-sky-dark);
 }
 
 /* Storm theme - Dark Waters */
@@ -36,6 +39,7 @@
   --color-sky-dark: #8494A5;
   --color-sky-accent: #CBD5DD;
   --color-sky-divider: #CDD3D7;
+  accent-color: var(--color-sky-dark);
 }
 
 /* Sunrise theme - Morning Light */
@@ -45,6 +49,7 @@
   --color-sky-dark: #FF99AA;
   --color-sky-accent: #FFE0E6;
   --color-sky-divider: #FFE5EB;
+  accent-color: var(--color-sky-dark);
 }
 
 /* Forest theme - Medieval European Woodland */
@@ -54,6 +59,7 @@
   --color-sky-dark: #A5C2B3;
   --color-sky-accent: #E3E9E5;
   --color-sky-divider: #D2DCD6;
+  accent-color: var(--color-sky-dark);
 }
 
 /* Arctic theme - Frozen Tundra */
@@ -63,6 +69,7 @@
   --color-sky-dark: #B8D9F0;
   --color-sky-accent: #EDF7FD;
   --color-sky-divider: #ECF6FE;
+  accent-color: var(--color-sky-dark);
 }
 
 /* Magic theme - Lilac */
@@ -72,6 +79,7 @@
   --color-sky-dark: #DDB3E6;
   --color-sky-accent: #F5E6F8;
   --color-sky-divider: #F3E3F7;
+  accent-color: var(--color-sky-dark);
 }
 
 /* High Contrast Versions */
@@ -83,6 +91,7 @@
   --color-sky-dark: #5BA3FF;
   --color-sky-accent: #C7E3FF;
   --color-sky-divider: #D4EDFF;
+  accent-color: var(--color-sky-dark);
 }
 
 /* Sea theme - Deep Ocean (High Contrast) */
@@ -92,6 +101,7 @@
   --color-sky-dark: #4A9AB8;
   --color-sky-accent: #B8DFEB;
   --color-sky-divider: #D0E8F0;
+  accent-color: var(--color-sky-dark);
 }
 
 /* Sunset theme - Sunset Horizon (High Contrast) */
@@ -101,6 +111,7 @@
   --color-sky-dark: #FF7A4D;
   --color-sky-accent: #FFD1BE;
   --color-sky-divider: #FFE0D4;
+  accent-color: var(--color-sky-dark);
 }
 
 /* Storm theme - Dark Waters (High Contrast) */
@@ -110,6 +121,7 @@
   --color-sky-dark: #5D728A;
   --color-sky-accent: #B3BFCC;
   --color-sky-divider: #CACFDA;
+  accent-color: var(--color-sky-dark);
 }
 
 /* Sunrise theme - Morning Light (High Contrast) */
@@ -119,6 +131,7 @@
   --color-sky-dark: #FF6685;
   --color-sky-accent: #FFCCD9;
   --color-sky-divider: #FFDDE4;
+  accent-color: var(--color-sky-dark);
 }
 
 /* Forest theme - Medieval European Woodland (High Contrast) */
@@ -128,6 +141,7 @@
   --color-sky-dark: #7AAA91;
   --color-sky-accent: #CADDD1;
   --color-sky-divider: #CFD9D4;
+  accent-color: var(--color-sky-dark);
 }
 
 /* Arctic theme - Frozen Tundra (High Contrast) */
@@ -137,6 +151,7 @@
   --color-sky-dark: #8DC6EA;
   --color-sky-accent: #DAEFFB;
   --color-sky-divider: #E3F3FF;
+  accent-color: var(--color-sky-dark);
 }
 
 /* Magic theme - Lilac (High Contrast) */
@@ -146,12 +161,92 @@
   --color-sky-dark: #C58FD8;
   --color-sky-accent: #E8D6ED;
   --color-sky-divider: #EFE3F3;
+  accent-color: var(--color-sky-dark);
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+/* Custom radio button styling for consistent appearance */
+input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #999;
+  border-radius: 50%;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  background: white;
+  flex-shrink: 0;
+}
+
+input[type="radio"]:checked {
+  border-color: var(--color-sky-dark);
+}
+
+input[type="radio"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-sky-dark);
+}
+
+input[type="radio"]:hover {
+  border-color: var(--color-sky-medium);
+}
+
+input[type="radio"]:focus {
+  box-shadow: 0 0 0 2px rgba(153, 204, 255, 0.3);
+}
+
+/* Custom checkbox styling for consistent appearance */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #999;
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  background: white;
+  flex-shrink: 0;
+}
+
+input[type="checkbox"]:checked {
+  border-color: var(--color-sky-dark);
+  background: var(--color-sky-dark);
+}
+
+input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--color-sky-medium);
+}
+
+input[type="checkbox"]:focus {
+  box-shadow: 0 0 0 2px rgba(153, 204, 255, 0.3);
 }
 
 body {
