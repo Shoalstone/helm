@@ -225,7 +225,8 @@ export function useKeybindings(scrollToBottom?: () => void, toggleGreyOutReadOnl
           }
 
           (async () => {
-            if (!settings.apiKey) {
+            // Skip API key check for custom endpoints (e.g., local llama.cpp)
+            if (!settings.continuations.useCustomEndpoint && !settings.apiKey) {
               alert('Please set your OpenRouter API key in Settings');
               return;
             }

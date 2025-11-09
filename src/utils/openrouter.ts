@@ -76,7 +76,7 @@ async function withRetry<T>(
 export async function callContinuationModel(
   apiKey: string,
   text: string,
-  settings: ModelSettings,
+  settings: ModelSettings & { useCustomEndpoint?: boolean; customBaseUrl?: string; customApiKey?: string },
   assistantMode?: boolean
 ): Promise<string> {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
@@ -84,7 +84,27 @@ export async function callContinuationModel(
   const verbose = store.terminalVerbose;
   const idPrefix = verbose ? `[${requestId}] ` : '';
 
-  store.addTerminalMessage('info', `${idPrefix}Calling continuation model: ${settings.modelName} (${assistantMode ? 'assistant mode' : 'normal mode'})`);
+  // Determine which API URL and key to use
+  let apiUrl: string;
+  let apiSource: string;
+  let effectiveApiKey: string;
+
+  if (settings.useCustomEndpoint) {
+    if (!settings.customBaseUrl) {
+      const errorMsg = 'Custom endpoint is enabled but no custom base URL is configured';
+      logToTerminal(errorMsg);
+      throw new Error(errorMsg);
+    }
+    apiUrl = settings.customBaseUrl;
+    apiSource = 'Custom Endpoint';
+    effectiveApiKey = settings.customApiKey ?? ''; // Use custom API key, or empty string if not set
+  } else {
+    apiUrl = API_URL;
+    apiSource = 'OpenRouter';
+    effectiveApiKey = apiKey;
+  }
+
+  store.addTerminalMessage('info', `${idPrefix}Calling continuation model via ${apiSource}: ${settings.modelName} (${assistantMode ? 'assistant mode' : 'normal mode'})`);
   store.addTerminalMessage('debug', `[${requestId}] Input: ${text.length} chars, max_tokens: ${settings.maxTokens}, temp: ${settings.temperature}`);
 
   return withRetry(async () => {
@@ -103,11 +123,11 @@ export async function callContinuationModel(
       request.messages = [{ role: 'user', content: text }];
     }
 
-    const response = await fetch(API_URL, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${effectiveApiKey}`,
         'HTTP-Referer': 'https://helm.local',
         'X-Title': 'Helm',
       },
@@ -116,7 +136,7 @@ export async function callContinuationModel(
 
     if (!response.ok) {
       const errorText = await response.text();
-      const errorMsg = `OpenRouter API request failed (${response.status} ${response.statusText}): ${errorText}`;
+      const errorMsg = `API request failed (${response.status} ${response.statusText}): ${errorText}`;
       logToTerminal(errorMsg);
       throw new Error(errorMsg);
     }
@@ -124,7 +144,7 @@ export async function callContinuationModel(
     const data: OpenRouterResponse = await response.json();
 
     if (!data.choices || data.choices.length === 0) {
-      const errorMsg = `[${requestId}] No completion returned from OpenRouter API. Response: ${JSON.stringify(data)}`;
+      const errorMsg = `[${requestId}] No completion returned from API. Response: ${JSON.stringify(data)}`;
       logToTerminal(errorMsg);
       throw new Error(errorMsg);
     }
@@ -148,11 +168,26 @@ export async function callAssistantModel(
   apiKey: string,
   systemPrompt: string,
   userMessage: string,
-  settings: ModelSettings & { useFinetuned?: boolean },
+  settings: ModelSettings & { useFinetuned?: boolean; useCustomEndpoint?: boolean; customBaseUrl?: string; customApiKey?: string },
   openaiApiKey?: string
 ): Promise<string> {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-  const modelSource = settings.useFinetuned && openaiApiKey ? 'OpenAI' : 'OpenRouter';
+
+  // Determine which API to use and which API key
+  let modelSource: string;
+  let effectiveApiKey: string;
+
+  if (settings.useFinetuned && openaiApiKey) {
+    modelSource = 'OpenAI';
+    effectiveApiKey = openaiApiKey;
+  } else if (settings.useCustomEndpoint) {
+    modelSource = 'Custom Endpoint';
+    effectiveApiKey = settings.customApiKey ?? ''; // Use custom API key, or empty string if not set
+  } else {
+    modelSource = 'OpenRouter';
+    effectiveApiKey = apiKey;
+  }
+
   const store = useStore.getState();
   const verbose = store.terminalVerbose;
   const idPrefix = verbose ? `[${requestId}] ` : '';
@@ -202,8 +237,22 @@ export async function callAssistantModel(
     });
   }
 
-  // Otherwise use OpenRouter
+  // Otherwise use OpenRouter or custom endpoint
   return withRetry(async () => {
+    // Determine which API URL to use
+    let apiUrl: string;
+
+    if (settings.useCustomEndpoint) {
+      if (!settings.customBaseUrl) {
+        const errorMsg = 'Custom endpoint is enabled but no custom base URL is configured';
+        logToTerminal(errorMsg);
+        throw new Error(errorMsg);
+      }
+      apiUrl = settings.customBaseUrl;
+    } else {
+      apiUrl = API_URL;
+    }
+
     const request: OpenRouterRequest = {
       model: settings.modelName,
       messages: [
@@ -215,11 +264,11 @@ export async function callAssistantModel(
       max_tokens: settings.maxTokens,
     };
 
-    const response = await fetch(API_URL, {
+    const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${effectiveApiKey}`,
         'HTTP-Referer': 'https://helm.local',
         'X-Title': 'Helm',
       },
@@ -228,7 +277,7 @@ export async function callAssistantModel(
 
     if (!response.ok) {
       const errorText = await response.text();
-      const errorMsg = `OpenRouter API request failed (${response.status} ${response.statusText}): ${errorText}`;
+      const errorMsg = `API request failed (${response.status} ${response.statusText}): ${errorText}`;
       logToTerminal(errorMsg);
       throw new Error(errorMsg);
     }
@@ -236,7 +285,7 @@ export async function callAssistantModel(
     const data: OpenRouterResponse = await response.json();
 
     if (!data.choices || data.choices.length === 0) {
-      const errorMsg = `[${requestId}] No response returned from OpenRouter API. Response: ${JSON.stringify(data)}`;
+      const errorMsg = `[${requestId}] No response returned from API. Response: ${JSON.stringify(data)}`;
       logToTerminal(errorMsg);
       throw new Error(errorMsg);
     }

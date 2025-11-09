@@ -40,8 +40,9 @@ const Actions: React.FC = () => {
       return;
     }
 
-    if (!settings.apiKey) {
-      setError('Please set your API key in Settings');
+    // Skip API key check for custom endpoints (e.g., local llama.cpp)
+    if (!settings.assistant.useCustomEndpoint && !settings.apiKey) {
+      setError('Please set your OpenRouter API key in Settings');
       return;
     }
 

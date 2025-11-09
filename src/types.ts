@@ -68,11 +68,17 @@ export interface Settings {
     branchingFactor: number;
     assistantMode?: boolean;
     savedModels?: string[];
+    useCustomEndpoint?: boolean; // Toggle to use custom OpenAI-compatible endpoint
+    customBaseUrl?: string; // Custom base URL for OpenAI-compatible API
+    customApiKey?: string; // API key for custom endpoint
   };
   assistant: ModelSettings & {
     savedModels?: string[];
     useFinetuned?: boolean; // Toggle to use fine-tuned model
     useFineTuningPrompts?: boolean; // Toggle to use fine-tuning prompts for all agents
+    useCustomEndpoint?: boolean; // Toggle to use custom OpenAI-compatible endpoint
+    customBaseUrl?: string; // Custom base URL for OpenAI-compatible API
+    customApiKey?: string; // API key for custom endpoint
   };
 }
 

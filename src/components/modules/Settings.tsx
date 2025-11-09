@@ -295,6 +295,63 @@ const Settings: React.FC = () => {
                   Assistant Mode
                 </label>
               </div>
+
+              <div>
+                <label className="flex items-center text-xs font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={settings.continuations.useCustomEndpoint ?? false}
+                    onChange={(e) =>
+                      updateSettings({
+                        continuations: {
+                          ...settings.continuations,
+                          useCustomEndpoint: e.target.checked,
+                        },
+                      })
+                    }
+                    className="mr-2"
+                  />
+                  Use Custom Endpoint
+                </label>
+                {settings.continuations.useCustomEndpoint && (
+                  <div className="mt-2 ml-5">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Full Endpoint URL</label>
+                    <input
+                      type="text"
+                      value={settings.continuations.customBaseUrl ?? ''}
+                      onChange={(e) =>
+                        updateSettings({
+                          continuations: {
+                            ...settings.continuations,
+                            customBaseUrl: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
+                      placeholder="http://localhost:8000/v1/chat/completions"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      OpenAI-compatible API
+                    </p>
+
+                    <label className="block text-xs font-medium text-gray-700 mb-1 mt-3">API Key</label>
+                    <input
+                      type="password"
+                      value={settings.continuations.customApiKey ?? ''}
+                      onChange={(e) =>
+                        updateSettings({
+                          continuations: {
+                            ...settings.continuations,
+                            customApiKey: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
+                      placeholder="Optional API key for custom endpoint"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -488,6 +545,63 @@ const Settings: React.FC = () => {
                 <p className="text-xs text-gray-500 mt-1 ml-5">
                   When enabled, the prompts used in fine-tuning will override instructions for all agents, potentially improving performance.
                 </p>
+              </div>
+
+              <div>
+                <label className="flex items-center text-xs font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={settings.assistant.useCustomEndpoint ?? false}
+                    onChange={(e) =>
+                      updateSettings({
+                        assistant: {
+                          ...settings.assistant,
+                          useCustomEndpoint: e.target.checked,
+                        },
+                      })
+                    }
+                    className="mr-2"
+                  />
+                  Use Custom Endpoint
+                </label>
+                {settings.assistant.useCustomEndpoint && (
+                  <div className="mt-2 ml-5">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Full Endpoint URL</label>
+                    <input
+                      type="text"
+                      value={settings.assistant.customBaseUrl ?? ''}
+                      onChange={(e) =>
+                        updateSettings({
+                          assistant: {
+                            ...settings.assistant,
+                            customBaseUrl: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
+                      placeholder="http://localhost:8000/v1/chat/completions"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      OpenAI-compatible API
+                    </p>
+
+                    <label className="block text-xs font-medium text-gray-700 mb-1 mt-3">API Key</label>
+                    <input
+                      type="password"
+                      value={settings.assistant.customApiKey ?? ''}
+                      onChange={(e) =>
+                        updateSettings({
+                          assistant: {
+                            ...settings.assistant,
+                            customApiKey: e.target.value,
+                          },
+                        })
+                      }
+                      className="w-full px-2 py-1 text-xs rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-sky-dark"
+                      placeholder="Optional API key for custom endpoint"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}

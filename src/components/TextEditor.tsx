@@ -192,7 +192,8 @@ const TextEditor = forwardRef<TextEditorHandle, TextEditorProps>(({ fontFamily, 
         state.markNodeExpanded(node.id);
       }
 
-      if (!state.settings.apiKey) {
+      // Skip API key check for custom endpoints (e.g., local llama.cpp)
+      if (!state.settings.continuations.useCustomEndpoint && !state.settings.apiKey) {
         alert('Please set your OpenRouter API key in Settings');
         return;
       }
