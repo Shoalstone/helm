@@ -272,3 +272,22 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;  /* Chrome, Safari and Opera */
 }
+
+/* Custom title bar styling */
+.title-bar {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.title-bar-button {
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.title-bar-button:focus {
+  outline: none;
+}
+
+.title-bar-button:active {
+  opacity: 0.8;
+}

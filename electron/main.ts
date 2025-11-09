@@ -109,6 +109,41 @@ ipcMain.handle('show-open-dialog', async (_, options: {
   return result.filePaths[0]; // Returns undefined if cancelled
 });
 
+// Window control IPC handlers
+ipcMain.handle('window-minimize', () => {
+  if (mainWindow) {
+    mainWindow.minimize();
+  }
+});
+
+ipcMain.handle('window-maximize', () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+});
+
+ipcMain.handle('window-close', () => {
+  if (mainWindow) {
+    mainWindow.close();
+  }
+});
+
+ipcMain.handle('window-is-maximized', () => {
+  return mainWindow ? mainWindow.isMaximized() : false;
+});
+
+ipcMain.handle('window-is-fullscreen', () => {
+  return mainWindow ? mainWindow.isFullScreen() : false;
+});
+
+ipcMain.handle('get-platform', () => {
+  return process.platform;
+});
+
 // Create a minimal menu that doesn't conflict with our custom shortcuts
 function createMenu() {
   const isMac = process.platform === 'darwin';
@@ -190,9 +225,14 @@ function createWindow() {
   // Set up minimal menu that doesn't conflict with our shortcuts
   createMenu();
 
+  const isMac = process.platform === 'darwin';
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
+    frame: false,
+    titleBarStyle: isMac ? 'hiddenInset' : undefined,
+    trafficLightPosition: isMac ? { x: 10, y: 6 } : undefined,
     icon: path.join(__dirname, '../build/icons/icon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -209,6 +249,24 @@ function createWindow() {
   if (process.platform !== 'darwin') {
     mainWindow.setMenuBarVisibility(false);
   }
+
+  // Listen for maximize/unmaximize events to notify the renderer
+  mainWindow.on('maximize', () => {
+    mainWindow?.webContents.send('window-maximized', true);
+  });
+
+  mainWindow.on('unmaximize', () => {
+    mainWindow?.webContents.send('window-maximized', false);
+  });
+
+  // Listen for fullscreen events to notify the renderer
+  mainWindow.on('enter-full-screen', () => {
+    mainWindow?.webContents.send('window-fullscreen', true);
+  });
+
+  mainWindow.on('leave-full-screen', () => {
+    mainWindow?.webContents.send('window-fullscreen', false);
+  });
 
   if (isDev) {
     // Vite's dev server injects this env var when available

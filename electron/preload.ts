@@ -19,4 +19,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
     filters?: { name: string; extensions: string[] }[];
     properties?: string[];
   }) => ipcRenderer.invoke('show-open-dialog', options),
+
+  // Window controls
+  windowMinimize: () => ipcRenderer.invoke('window-minimize'),
+  windowMaximize: () => ipcRenderer.invoke('window-maximize'),
+  windowClose: () => ipcRenderer.invoke('window-close'),
+  windowIsMaximized: () => ipcRenderer.invoke('window-is-maximized'),
+  windowIsFullscreen: () => ipcRenderer.invoke('window-is-fullscreen'),
+  getPlatform: () => ipcRenderer.invoke('get-platform'),
+  onWindowMaximized: (callback: (isMaximized: boolean) => void) => {
+    ipcRenderer.on('window-maximized', (_, isMaximized) => callback(isMaximized));
+  },
+  onWindowFullscreen: (callback: (isFullscreen: boolean) => void) => {
+    ipcRenderer.on('window-fullscreen', (_, isFullscreen) => callback(isFullscreen));
+  },
 });

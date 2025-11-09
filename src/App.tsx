@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import TitleBar from './components/TitleBar';
 import Header from './components/Header';
 import LeftPanel from './components/LeftPanel';
 import RightPanel from './components/RightPanel';
@@ -19,13 +20,31 @@ function App() {
   const { scouts, bottomPanelHeight, setBottomPanelHeight, ribbonWindow } = useStore();
   const [fontFamily, setFontFamily] = useState("'Menlo', 'Monaco', 'Courier New', monospace");
   const [fontSize, setFontSize] = useState(14);
+  const [platform, setPlatform] = useState<string>('');
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const graphBottomRef = useRef<GraphContentHandle>(null);
+
+  useEffect(() => {
+    window.electronAPI.getPlatform().then(setPlatform);
+
+    // Get initial fullscreen state
+    window.electronAPI.windowIsFullscreen().then(setIsFullscreen);
+
+    // Listen for fullscreen events
+    window.electronAPI.onWindowFullscreen((fullscreen) => {
+      setIsFullscreen(fullscreen);
+    });
+  }, []);
+
+  const titleBarHeight = isFullscreen ? '0px' : (platform === 'darwin' ? '28px' : '30px');
 
   return (
     <div className="w-full h-full flex flex-col bg-sky-light">
-      <Header />
-      <div className="flex-1 flex overflow-hidden">
-        <LeftPanel />
+      <TitleBar />
+      <div style={{ paddingTop: titleBarHeight }} className="flex-1 flex flex-col overflow-hidden">
+        <Header />
+        <div className="flex-1 flex overflow-hidden">
+          <LeftPanel />
 
         {/* Center column with editor, ribbon, and bottom panel */}
         <div className="flex-1 min-w-0 flex flex-col">
@@ -87,39 +106,40 @@ function App() {
           )}
         </div>
 
-        <RightPanel />
-      </div>
-
-      {/* Agent invoke mode overlay */}
-      {scoutInvokeMode && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-sky-light p-6 rounded-xl shadow-2xl max-w-md">
-            <h3 className="text-lg font-semibold mb-3 text-gray-800">Select Agent</h3>
-            {scouts.filter((s) => s.buttonNumber).length > 0 ? (
-              <div className="space-y-2 mb-4">
-                {scouts
-                  .filter((s) => s.buttonNumber)
-                  .sort((a, b) => (a.buttonNumber || 0) - (b.buttonNumber || 0))
-                  .map((scout) => (
-                    <div
-                      key={scout.id}
-                      className="flex items-center gap-2 text-sm text-gray-700 bg-white px-3 py-2 rounded"
-                    >
-                      <span className="font-mono font-bold text-sky-dark">{scout.buttonNumber}</span>
-                      <span>-</span>
-                      <span>{scout.name}</span>
-                    </div>
-                  ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-600 mb-4">
-                No agents with button assignments. Assign buttons in the Agents panel.
-              </p>
-            )}
-            <p className="text-xs text-gray-500">Press Escape to cancel</p>
-          </div>
+          <RightPanel />
         </div>
-      )}
+
+        {/* Agent invoke mode overlay */}
+        {scoutInvokeMode && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-sky-light p-6 rounded-xl shadow-2xl max-w-md">
+              <h3 className="text-lg font-semibold mb-3 text-gray-800">Select Agent</h3>
+              {scouts.filter((s) => s.buttonNumber).length > 0 ? (
+                <div className="space-y-2 mb-4">
+                  {scouts
+                    .filter((s) => s.buttonNumber)
+                    .sort((a, b) => (a.buttonNumber || 0) - (b.buttonNumber || 0))
+                    .map((scout) => (
+                      <div
+                        key={scout.id}
+                        className="flex items-center gap-2 text-sm text-gray-700 bg-white px-3 py-2 rounded"
+                      >
+                        <span className="font-mono font-bold text-sky-dark">{scout.buttonNumber}</span>
+                        <span>-</span>
+                        <span>{scout.name}</span>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600 mb-4">
+                  No agents with button assignments. Assign buttons in the Agents panel.
+                </p>
+              )}
+              <p className="text-xs text-gray-500">Press Escape to cancel</p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

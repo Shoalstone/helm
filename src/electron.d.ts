@@ -21,6 +21,16 @@ export interface ElectronAPI {
     filters?: { name: string; extensions: string[] }[];
     properties?: string[];
   }) => Promise<string | undefined>;
+
+  // Window controls
+  windowMinimize: () => Promise<void>;
+  windowMaximize: () => Promise<void>;
+  windowClose: () => Promise<void>;
+  windowIsMaximized: () => Promise<boolean>;
+  windowIsFullscreen: () => Promise<boolean>;
+  getPlatform: () => Promise<string>;
+  onWindowMaximized: (callback: (isMaximized: boolean) => void) => void;
+  onWindowFullscreen: (callback: (isFullscreen: boolean) => void) => void;
 }
 
 declare global {
