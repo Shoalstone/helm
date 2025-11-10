@@ -68,6 +68,7 @@ const Terminal: React.FC = () => {
       addTerminalMessage('info', '  /clear - Clear terminal output');
       addTerminalMessage('info', '  /verbose - Toggle verbose debug logging');
       addTerminalMessage('info', '  /logprobs - Toggle logprobs output for OpenRouter requests');
+      addTerminalMessage('info', '  /setlogprobs <number> - Set number of top logprobs (1-20)');
     } else if (trimmedCommand === '/clear') {
       clearTerminal();
     } else if (trimmedCommand === '/verbose') {
@@ -85,8 +86,27 @@ const Terminal: React.FC = () => {
       });
       addTerminalMessage('info', `Logprobs ${newEnabled ? 'enabled' : 'disabled'}.`);
       if (newEnabled) {
-        addTerminalMessage('info', `Requesting top ${settings.continuations.topLogprobs ?? 20} token probabilities.`);
+        addTerminalMessage('info', `Requesting top ${settings.continuations.topLogprobs ?? 5} token probabilities.`);
       }
+    } else if (trimmedCommand.startsWith('/setlogprobs ')) {
+      const args = trimmedCommand.split(' ');
+      if (args.length !== 2) {
+        addTerminalMessage('error', 'Usage: /setlogprobs <number>');
+        addTerminalMessage('info', 'Example: /setlogprobs 5');
+        return;
+      }
+      const num = parseInt(args[1], 10);
+      if (isNaN(num) || num < 1 || num > 20) {
+        addTerminalMessage('error', 'Please provide a number between 1 and 20');
+        return;
+      }
+      updateSettings({
+        continuations: {
+          ...settings.continuations,
+          topLogprobs: num,
+        }
+      });
+      addTerminalMessage('info', `Top logprobs set to ${num}.`);
     } else {
       addTerminalMessage('error', `Unknown command: ${trimmedCommand}`);
       addTerminalMessage('info', 'Type /help for available commands');

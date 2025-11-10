@@ -53,7 +53,7 @@ const DEFAULT_SETTINGS: Settings = {
     assistantMode: false,
     savedModels: [],
     enableLogprobs: false,
-    topLogprobs: 20,
+    topLogprobs: 5,
   },
   assistant: {
     modelName: 'openai/gpt-oss-20b',

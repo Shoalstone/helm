@@ -137,7 +137,7 @@ export async function callContinuationModel(
     // Add logprobs parameters if enabled (only for messages format, as raw prompt may not support it)
     if (settings.enableLogprobs && !useRawFormat) {
       request.logprobs = true;
-      request.top_logprobs = settings.topLogprobs ?? 20;
+      request.top_logprobs = settings.topLogprobs ?? 5;
       store.addTerminalMessage('debug', `[${requestId}] Logprobs enabled: requesting top ${request.top_logprobs} token probabilities`);
     } else if (settings.enableLogprobs && useRawFormat) {
       store.addTerminalMessage('error', `[${requestId}] Warning: Logprobs requested but using raw prompt format - logprobs may not be supported. Try disabling assistant mode.`);
