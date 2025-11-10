@@ -52,6 +52,8 @@ const DEFAULT_SETTINGS: Settings = {
     branchingFactor: 2,
     assistantMode: false,
     savedModels: [],
+    enableLogprobs: false,
+    topLogprobs: 20,
   },
   assistant: {
     modelName: 'openai/gpt-oss-20b',

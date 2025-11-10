@@ -72,6 +72,8 @@ export interface Settings {
     customBaseUrl?: string; // Custom base URL for OpenAI-compatible API
     customApiKey?: string; // API key for custom endpoint
     customEndpointFormat?: 'openai' | 'raw'; // Format for custom endpoint requests
+    enableLogprobs?: boolean; // Toggle to request log probabilities from OpenRouter
+    topLogprobs?: number; // Number of most likely tokens to return (0-20)
   };
   assistant: ModelSettings & {
     savedModels?: string[];

@@ -27,6 +27,19 @@ interface OpenRouterRequest {
   top_p?: number;
   max_tokens?: number;
   transforms?: string[];
+  logprobs?: boolean;
+  top_logprobs?: number;
+}
+
+interface LogprobToken {
+  token: string;
+  logprob: number;
+  bytes?: number[] | null;
+  top_logprobs?: {
+    token: string;
+    logprob: number;
+    bytes?: number[] | null;
+  }[];
 }
 
 interface OpenRouterResponse {
@@ -35,6 +48,9 @@ interface OpenRouterResponse {
       content: string;
     };
     text?: string;
+    logprobs?: {
+      content?: LogprobToken[];
+    };
   }[];
 }
 
@@ -76,7 +92,7 @@ async function withRetry<T>(
 export async function callContinuationModel(
   apiKey: string,
   text: string,
-  settings: ModelSettings & { useCustomEndpoint?: boolean; customBaseUrl?: string; customApiKey?: string; customEndpointFormat?: 'openai' | 'raw' },
+  settings: ModelSettings & { useCustomEndpoint?: boolean; customBaseUrl?: string; customApiKey?: string; customEndpointFormat?: 'openai' | 'raw'; enableLogprobs?: boolean; topLogprobs?: number },
   assistantMode?: boolean
 ): Promise<string> {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
@@ -118,12 +134,23 @@ export async function callContinuationModel(
     // Determine format: use raw prompt mode when assistantMode is enabled OR when custom endpoint with raw format
     const useRawFormat = assistantMode || (settings.useCustomEndpoint && settings.customEndpointFormat === 'raw');
 
+    // Add logprobs parameters if enabled (only for messages format, as raw prompt may not support it)
+    if (settings.enableLogprobs && !useRawFormat) {
+      request.logprobs = true;
+      request.top_logprobs = settings.topLogprobs ?? 20;
+      store.addTerminalMessage('debug', `[${requestId}] Logprobs enabled: requesting top ${request.top_logprobs} token probabilities`);
+    } else if (settings.enableLogprobs && useRawFormat) {
+      store.addTerminalMessage('error', `[${requestId}] Warning: Logprobs requested but using raw prompt format - logprobs may not be supported. Try disabling assistant mode.`);
+    }
+
     if (useRawFormat) {
       request.prompt = text;
       request.transforms = []; // Disable automatic prompt transforms
     } else {
       request.messages = [{ role: 'user', content: text }];
     }
+
+    store.addTerminalMessage('debug', `[${requestId}] Request payload: ${JSON.stringify(request, null, 2)}`);
 
     const response = await fetch(apiUrl, {
       method: 'POST',
@@ -145,6 +172,8 @@ export async function callContinuationModel(
 
     const data: OpenRouterResponse = await response.json();
 
+    store.addTerminalMessage('debug', `[${requestId}] Response received: ${JSON.stringify(data, null, 2)}`);
+
     if (!data.choices || data.choices.length === 0) {
       const errorMsg = `[${requestId}] No completion returned from API. Response: ${JSON.stringify(data)}`;
       logToTerminal(errorMsg);
@@ -152,7 +181,8 @@ export async function callContinuationModel(
     }
 
     const result = data.choices[0].message?.content || data.choices[0].text || '';
-    const store = useStore.getState();
+    store.addTerminalMessage('debug', `[${requestId}] Extracted result length: ${result.length}, has logprobs: ${!!data.choices[0].logprobs}`);
+
     const verbose = store.terminalVerbose;
     const idPrefix = verbose ? `[${requestId}] ` : '';
 
@@ -161,6 +191,30 @@ export async function callContinuationModel(
     } else {
       store.addTerminalMessage('info', `${idPrefix}Continuation model call successful (${result.length} chars returned)`);
     }
+
+    // Display logprobs if they were requested and received
+    if (settings.enableLogprobs && data.choices[0].logprobs?.content) {
+      const logprobsData = data.choices[0].logprobs.content;
+      store.addTerminalMessage('info', `${idPrefix}=== Log Probabilities (${logprobsData.length} tokens) ===`);
+
+      logprobsData.forEach((tokenData, index) => {
+        const tokenDisplay = tokenData.token.replace(/\n/g, '\\n').replace(/\t/g, '\\t');
+        const prob = Math.exp(tokenData.logprob) * 100;
+        store.addTerminalMessage('info', `  Token ${index + 1}: "${tokenDisplay}" (logprob: ${tokenData.logprob.toFixed(4)}, prob: ${prob.toFixed(2)}%)`);
+
+        // Display top alternative tokens if available
+        if (tokenData.top_logprobs && tokenData.top_logprobs.length > 0) {
+          store.addTerminalMessage('info', `    Top alternatives:`);
+          tokenData.top_logprobs.slice(0, 5).forEach((alt, altIndex) => {
+            const altTokenDisplay = alt.token.replace(/\n/g, '\\n').replace(/\t/g, '\\t');
+            const altProb = Math.exp(alt.logprob) * 100;
+            store.addTerminalMessage('info', `      ${altIndex + 1}. "${altTokenDisplay}" (logprob: ${alt.logprob.toFixed(4)}, prob: ${altProb.toFixed(2)}%)`);
+          });
+        }
+      });
+      store.addTerminalMessage('info', `${idPrefix}=== End Log Probabilities ===`);
+    }
+
     return result;
   });
 }

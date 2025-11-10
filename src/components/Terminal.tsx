@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../store';
 
 const Terminal: React.FC = () => {
-  const { terminalMessages, terminalVerbose, addTerminalMessage, clearTerminal, toggleTerminalVerbose } = useStore();
+  const { terminalMessages, terminalVerbose, addTerminalMessage, clearTerminal, toggleTerminalVerbose, settings, updateSettings } = useStore();
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -67,12 +67,26 @@ const Terminal: React.FC = () => {
       addTerminalMessage('info', '  /help - Show this help message');
       addTerminalMessage('info', '  /clear - Clear terminal output');
       addTerminalMessage('info', '  /verbose - Toggle verbose debug logging');
+      addTerminalMessage('info', '  /logprobs - Toggle logprobs output for OpenRouter requests');
     } else if (trimmedCommand === '/clear') {
       clearTerminal();
     } else if (trimmedCommand === '/verbose') {
       toggleTerminalVerbose();
       const newState = !terminalVerbose;
       addTerminalMessage('info', `Verbose mode ${newState ? 'enabled' : 'disabled'}.`);
+    } else if (trimmedCommand === '/logprobs') {
+      const currentEnabled = settings.continuations.enableLogprobs ?? false;
+      const newEnabled = !currentEnabled;
+      updateSettings({
+        continuations: {
+          ...settings.continuations,
+          enableLogprobs: newEnabled,
+        }
+      });
+      addTerminalMessage('info', `Logprobs ${newEnabled ? 'enabled' : 'disabled'}.`);
+      if (newEnabled) {
+        addTerminalMessage('info', `Requesting top ${settings.continuations.topLogprobs ?? 20} token probabilities.`);
+      }
     } else {
       addTerminalMessage('error', `Unknown command: ${trimmedCommand}`);
       addTerminalMessage('info', 'Type /help for available commands');
