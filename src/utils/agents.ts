@@ -17,7 +17,8 @@ function getContextNodes(tree: Tree, nodeId: string, vision: number): string[] {
     if (node.parentId) {
       const parent = tree.nodes.get(node.parentId);
       if (parent) {
-        context.unshift(parent.text);
+        const parentText = typeof parent.text === 'string' ? parent.text : '';
+        context.unshift(parentText);
         count++;
       }
       currentId = node.parentId;

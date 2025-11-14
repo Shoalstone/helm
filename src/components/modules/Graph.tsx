@@ -90,7 +90,8 @@ export const GraphContent = forwardRef<GraphContentHandle, GraphContentProps>(({
     const flowEdges: Edge[] = [];
 
     currentTree.nodes.forEach((node) => {
-      const truncatedText = node.text.substring(0, 30) + (node.text.length > 30 ? '...' : '');
+      const nodeText = typeof node.text === 'string' ? node.text : '';
+      const truncatedText = nodeText.substring(0, 30) + (nodeText.length > 30 ? '...' : '');
       const isCurrentNode = node.id === currentTree.currentNodeId;
 
       // Check if this node is the starting point of an active Campaign

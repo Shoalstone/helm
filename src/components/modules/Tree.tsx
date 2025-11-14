@@ -75,7 +75,8 @@ const Tree: React.FC = () => {
 
     const isCurrentNode = nodeId === currentTree.currentNodeId;
     const hasChildren = node.childIds.length > 0;
-    const truncatedText = node.text.substring(0, 30) + (node.text.length > 30 ? '...' : '');
+    const nodeText = typeof node.text === 'string' ? node.text : '';
+    const truncatedText = nodeText.substring(0, 30) + (nodeText.length > 30 ? '...' : '');
     const isBookmarked = currentTree.bookmarkedNodeIds.includes(nodeId);
 
     // Check if this node is the starting point of an active Campaign
@@ -141,7 +142,8 @@ const Tree: React.FC = () => {
                   currentTree.bookmarkedNodeIds.map((nodeId) => {
                     const node = currentTree.nodes.get(nodeId);
                     if (!node) return null;
-                    const truncatedText = node.text.substring(0, 40) + (node.text.length > 40 ? '...' : '');
+                    const nodeText = typeof node.text === 'string' ? node.text : '';
+                    const truncatedText = nodeText.substring(0, 40) + (nodeText.length > 40 ? '...' : '');
                     const isCurrentNode = nodeId === currentTree.currentNodeId;
                     return (
                       <button

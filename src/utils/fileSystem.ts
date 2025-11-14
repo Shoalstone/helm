@@ -687,9 +687,10 @@ export async function unrollTreeBranches(tree: Tree): Promise<string | null> {
     output += '─'.repeat(40) + '\n\n';
 
     // Show path labels
-    const pathLabels = branchNodes.map(node =>
-      node.text.substring(0, 50).replace(/\n/g, ' ') || '(empty)'
-    );
+    const pathLabels = branchNodes.map(node => {
+      const nodeText = typeof node.text === 'string' ? node.text : '';
+      return nodeText.substring(0, 50).replace(/\n/g, ' ') || '(empty)';
+    });
     output += `[Path: ${pathLabels.join(' > ')}]\n`;
     output += `[Leaf Node ID: ${leafId}]\n\n`;
 
@@ -739,7 +740,8 @@ export async function unrollTree(tree: Tree): Promise<string | null> {
 
     const lines: string[] = [];
     const connector = isLast ? '└─ ' : '├─ ';
-    const nodeLabel = node.text.substring(0, 50).replace(/\n/g, ' ') || '(empty)';
+    const nodeText = typeof node.text === 'string' ? node.text : '';
+    const nodeLabel = nodeText.substring(0, 50).replace(/\n/g, ' ') || '(empty)';
 
     lines.push(prefix + connector + nodeLabel);
 
@@ -762,7 +764,8 @@ export async function unrollTree(tree: Tree): Promise<string | null> {
       const node = tree.nodes.get(currentId);
       if (!node) break;
 
-      const label = node.text.substring(0, 50).replace(/\n/g, ' ') || '(empty)';
+      const nodeText = typeof node.text === 'string' ? node.text : '';
+      const label = nodeText.substring(0, 50).replace(/\n/g, ' ') || '(empty)';
       path.unshift(label);
       currentId = node.parentId;
     }
@@ -785,7 +788,8 @@ export async function unrollTree(tree: Tree): Promise<string | null> {
 
   // Build the tree structure index
   const rootNode = tree.nodes.get(tree.rootId);
-  const rootLabel = rootNode?.text.substring(0, 50).replace(/\n/g, ' ') || '(empty)';
+  const rootText = rootNode && typeof rootNode.text === 'string' ? rootNode.text : '';
+  const rootLabel = rootText.substring(0, 50).replace(/\n/g, ' ') || '(empty)';
 
   let output = '';
   output += 'TREE STRUCTURE INDEX\n';

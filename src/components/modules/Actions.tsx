@@ -144,7 +144,8 @@ const Actions: React.FC = () => {
           const parent = currentTree.nodes.get(node.parentId);
           if (!parent) break;
 
-          parentTexts.unshift(parent.text);
+          const parentText = typeof parent.text === 'string' ? parent.text : '';
+          parentTexts.unshift(parentText);
           currentId = node.parentId;
           remaining--;
         }

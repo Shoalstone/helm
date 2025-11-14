@@ -1099,7 +1099,9 @@ export const useStore = create<AppState>((set, get) => {
     }
 
     // Append node text to parent (no trimming!)
-    parent.text = parent.text + node.text;
+    const parentText = typeof parent.text === 'string' ? parent.text : '';
+    const nodeText = typeof node.text === 'string' ? node.text : '';
+    parent.text = parentText + nodeText;
 
     // Move children to parent
     parent.childIds = parent.childIds.filter(id => id !== nodeId).concat(node.childIds);
@@ -1181,7 +1183,9 @@ export const useStore = create<AppState>((set, get) => {
         continue;
       }
 
-      parent.text = parent.text + node.text;
+      const parentText = typeof parent.text === 'string' ? parent.text : '';
+      const nodeText = typeof node.text === 'string' ? node.text : '';
+      parent.text = parentText + nodeText;
       parent.childIds = parent.childIds.filter(childId => childId !== id);
       node.childIds.forEach(childId => {
         const child = tree.nodes.get(childId);
@@ -1358,7 +1362,9 @@ export const useStore = create<AppState>((set, get) => {
       }
 
       // Merge node into parent
-      parent.text = parent.text + node.text;
+      const parentText = typeof parent.text === 'string' ? parent.text : '';
+      const nodeText = typeof node.text === 'string' ? node.text : '';
+      parent.text = parentText + nodeText;
       parent.childIds = parent.childIds.filter(childId => childId !== id);
       node.childIds.forEach(childId => {
         const child = tree.nodes.get(childId);
